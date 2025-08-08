@@ -1,0 +1,47 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block content %}
+<div class="recent-products">
+    <h3>All Products <span>View All</span></h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Product ID</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th>Price</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>#{{ product.id }}</td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.category.name }}</td>
+                <td>{{ product.stock_quantity }}</td>
+                <td>
+                    <span class="status {% if product.status == 'active' %}completed{% else %}pending{% endif %}">
+                        {{ product.get_status_display }}
+                    </span>
+                </td>
+                <td>${{ product.selling_price }}</td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="##" class="view-btn" onclick="viewProductDetails('{{ product.id }}')">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <a href="##" class="delete-btn" onclick="confirmDeleteProduct('{{ product.id }}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock content %}

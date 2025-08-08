@@ -9,4 +9,7 @@ urlpatterns = [
     path('complete-order/', complete_order, name='complete_order'),
     path('get-active-order/', get_active_order, name='get_active_order'),
     path('get-recent-orders/', get_recent_orders, name='get_recent_orders'),
+    path('cancel/order/<int:order_id>', cancel_order, name='cancel_order'),
+    path('products/', products, name='products'),
+    path('reports/', reports, name='reports'),
 ]

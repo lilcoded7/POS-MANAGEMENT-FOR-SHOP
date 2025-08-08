@@ -151,7 +151,7 @@
         }
         
         .menu-toggle {
-            display: block; /* Always show toggle button */
+            display: block;
             font-size: 1.5rem;
             cursor: pointer;
             color: var(--primary);
@@ -332,6 +332,54 @@
             background: #c9a227;
         }
         
+        /* Categories Scrollbar */
+        .categories-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary) var(--bg);
+        }
+        
+        .categories-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .categories-scroll::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+        
+        .categories-scroll::-webkit-scrollbar-thumb {
+            background-color: var(--secondary);
+            border-radius: 6px;
+        }
+        
+        .category-btn {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        
+        .category-btn:hover {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+        
+        .category-btn.active {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+        
         .product-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -448,6 +496,10 @@
             font-size: 0.8rem;
         }
         
+        .order-item .item-qty button:hover {
+            background: #f0f0f0;
+        }
+        
         .order-item .item-qty span {
             margin: 0 10px;
             min-width: 20px;
@@ -492,6 +544,11 @@
             background: #6a001a;
         }
         
+        .checkout-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
         /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
@@ -521,7 +578,7 @@
             }
             
             .menu-toggle {
-                display: none !important; /* Hide on desktop */
+                display: none !important;
             }
             
             .sidebar-overlay {
@@ -539,7 +596,7 @@
             }
             
             .menu-toggle {
-                display: block !important; /* Show on mobile */
+                display: block !important;
             }
         }
         
@@ -575,6 +632,11 @@
             
             .order-item .item-qty {
                 align-self: flex-end;
+            }
+            
+            .category-btn {
+                padding: 6px 12px;
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -682,54 +744,27 @@
                 <thead>
                     <tr>
                         <th>Order ID</th>
-                        <th>Customer</th>
                         <th>Items</th>
                         <th>Amount</th>
                         <th>Status</th>
                         <th>Time</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
+                    {% for order in orders|slice:':8' %}
                     <tr>
-                        <td>#ORD-7841</td>
-                        <td>Sarah Johnson</td>
-                        <td>3</td>
-                        <td>$245.99</td>
-                        <td><span class="status completed">Completed</span></td>
-                        <td>10:25 AM</td>
+                        <td>#{{order.order_id}}</td>
+                        <td>{{order.get_order_quantity}}</td>
+                        <td>${{order.get_total_price}}</td>
+                    
+                        <td><span class="status completed">{{order.status}}</span></td>
+                        <td>{{order.created_at}}</td>
+                        <td><span><a href="##">cancel</a></span> <span><a href="##">view</a></span> <span><a href="##">delete</a></span></td>
+                        
                     </tr>
-                    <tr>
-                        <td>#ORD-7840</td>
-                        <td>Michael Brown</td>
-                        <td>1</td>
-                        <td>$129.99</td>
-                        <td><span class="status completed">Completed</span></td>
-                        <td>10:18 AM</td>
-                    </tr>
-                    <tr>
-                        <td>#ORD-7839</td>
-                        <td>Emily Davis</td>
-                        <td>2</td>
-                        <td>$89.50</td>
-                        <td><span class="status pending">Pending</span></td>
-                        <td>09:45 AM</td>
-                    </tr>
-                    <tr>
-                        <td>#ORD-7838</td>
-                        <td>Robert Wilson</td>
-                        <td>5</td>
-                        <td>$420.75</td>
-                        <td><span class="status completed">Completed</span></td>
-                        <td>09:30 AM</td>
-                    </tr>
-                    <tr>
-                        <td>#ORD-7837</td>
-                        <td>Jessica Lee</td>
-                        <td>1</td>
-                        <td>$65.00</td>
-                        <td><span class="status cancelled">Cancelled</span></td>
-                        <td>09:15 AM</td>
-                    </tr>
+                    {% endfor %}
+                   
                 </tbody>
             </table>
         </div>
@@ -738,158 +773,274 @@
         <div class="pos-actions">
             <div class="product-search">
                 <h3>Products</h3>
+                <form method="POST" action="{% url 'home' %}">
+                    {% csrf_token %}
                 <div class="search-box">
-                    <input type="text" placeholder="Search products...">
+                    <input type="text" name="name" placeholder="Search products...">
                     <button><i class="fas fa-search"></i></button>
                 </div>
+                </form>
+                <!-- Categories Scrollbar -->
+                <div class="categories-scroll">
+                    <button class="category-btn active">All Products</button>
+                    {% for category in categories %}
+                    <button class="category-btn">{{ category.name }}</button>
+                    {% endfor %}
+                </div>
+                
                 <div class="product-grid">
-                    <div class="product-card">
-                        <img src="https://via.placeholder.com/150?text=Luxe+Watch" alt="Product">
-                        <h4>Luxe Watch</h4>
-                        <div class="price">$129.99</div>
+                    {% for product in products %}
+                    <div data-id="{{product.id}}" class="product-card" data-category="{{ product.category.name|default:'' }}">
+                        <img src="https://st4.depositphotos.com/13324256/24475/i/450/depositphotos_244751462-stock-photo-top-view-product-lettering-made.jpg" alt="{{ product.name }}">
+                        <h4>{{ product.name }}</h4>
+                        <div class="price" style="color: #92f79c;">{{ product.status }}</div>
+                        <div class="price">${{ product.selling_price }}</div>
+                        <div class="price" style="color: #4ba8f9;">Stock Qty: {{ product.stock_quantity }}</div>
                     </div>
-                    <div class="product-card">
-                        <img src="https://via.placeholder.com/150?text=Gold+Necklace" alt="Product">
-                        <h4>Gold Necklace</h4>
-                        <div class="price">$299.99</div>
-                    </div>
-                    <div class="product-card">
-                        <img src="https://via.placeholder.com/150?text=Silk+Scarf" alt="Product">
-                        <h4>Silk Scarf</h4>
-                        <div class="price">$89.50</div>
-                    </div>
-                    <div class="product-card">
-                        <img src="https://via.placeholder.com/150?text=Leather+Bag" alt="Product">
-                        <h4>Leather Bag</h4>
-                        <div class="price">$245.99</div>
-                    </div>
-                    <div class="product-card">
-                        <img src="https://via.placeholder.com/150?text=Perfume" alt="Product">
-                        <h4>Signature Perfume</h4>
-                        <div class="price">$65.00</div>
-                    </div>
-                    <div class="product-card">
-                        <img src="https://via.placeholder.com/150?text=Cufflinks" alt="Product">
-                        <h4>Platinum Cufflinks</h4>
-                        <div class="price">$120.00</div>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
             
             <div class="order-summary">
                 <h3>Order Summary</h3>
                 <div class="order-items">
-                    <div class="order-item">
-                        <div class="item-info">
-                            <h4>Luxe Watch</h4>
-                            <div class="price">$129.99</div>
-                        </div>
-                        <div class="item-qty">
-                            <button>-</button>
-                            <span>1</span>
-                            <button>+</button>
-                        </div>
-                    </div>
-                    <div class="order-item">
-                        <div class="item-info">
-                            <h4>Silk Scarf</h4>
-                            <div class="price">$89.50</div>
-                        </div>
-                        <div class="item-qty">
-                            <button>-</button>
-                            <span>2</span>
-                            <button>+</button>
-                        </div>
-                    </div>
+                    <!-- Order items will be populated by JavaScript -->
                 </div>
                 <div class="order-total">
-                    <div>
-                        <span>Subtotal</span>
-                        <span>$308.99</span>
-                    </div>
-                    <div>
-                        <span>Tax (10%)</span>
-                        <span>$30.90</span>
-                    </div>
-                    <div class="grand-total">
-                        <span>Total</span>
-                        <span>$339.89</span>
-                    </div>
+                    <!-- Order totals will be populated by JavaScript -->
                 </div>
-                <button class="checkout-btn">Complete Order</button>
+                <button class="checkout-btn" disabled>Complete Order</button>
             </div>
         </div>
     </div>
     
     <script>
-        // Toggle sidebar on mobile
+        // Toggle sidebar
         const menuToggle = document.querySelector('.menu-toggle');
         const sidebar = document.querySelector('.sidebar');
         const sidebarOverlay = document.querySelector('.sidebar-overlay');
         
-        menuToggle.addEventListener('click', function() {
+        menuToggle.addEventListener('click', () => {
             sidebar.classList.toggle('active');
             sidebarOverlay.classList.toggle('active');
         });
         
-        // Close sidebar when clicking outside
-        sidebarOverlay.addEventListener('click', function() {
+        sidebarOverlay.addEventListener('click', () => {
             sidebar.classList.remove('active');
-            this.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
         });
-        
-        // Close sidebar when clicking on a menu item (optional)
-        document.querySelectorAll('.sidebar-menu li').forEach(item => {
-            item.addEventListener('click', function() {
-                if (window.innerWidth < 768) {
-                    sidebar.classList.remove('active');
-                    sidebarOverlay.classList.remove('active');
-                }
+
+        // Category filtering
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Update active button
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const category = this.textContent === 'All Products' ? '' : this.textContent;
+                filterProductsByCategory(category);
             });
         });
-        
-        // Add animation to product cards when clicked
+
+        function filterProductsByCategory(category) {
+            document.querySelectorAll('.product-card').forEach(card => {
+                const cardCategory = card.getAttribute('data-category');
+                if (category === '' || cardCategory === category) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Search functionality
+        document.querySelector('.search-box input').addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            document.querySelectorAll('.product-card').forEach(card => {
+                const name = card.querySelector('h4').textContent.toLowerCase();
+                card.style.display = name.includes(term) ? 'block' : 'none';
+            });
+        });
+
+        // Product click handler
         document.querySelectorAll('.product-card').forEach(card => {
             card.addEventListener('click', function() {
+                const productId = this.getAttribute('data-id');
+                addToOrder(productId);
+                
+                // Add click animation
                 this.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    this.style.transform = 'scale(1)';
-                }, 200);
-                // Here you would add the product to the order in a real implementation
+                setTimeout(() => this.style.transform = 'scale(1)', 200);
             });
         });
-        
-        // Quantity buttons functionality
-        document.querySelectorAll('.item-qty button').forEach(button => {
-            button.addEventListener('click', function() {
-                const span = this.parentElement.querySelector('span');
-                let qty = parseInt(span.textContent);
+
+        // Order management functions
+        async function addToOrder(productId) {
+            try {
+                const response = await fetch(`/add-to-order/${productId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({quantity: 1})
+                });
                 
-                if (this.textContent === '+') {
-                    qty++;
-                } else if (qty > 1) {
-                    qty--;
-                }
+                if (!response.ok) throw new Error('Failed to add to order');
                 
-                span.textContent = qty;
-                // Here you would update the order total in a real implementation
-            });
-        });
-        
-        // Make the dashboard responsive
-        function handleResize() {
-            if (window.innerWidth >= 768) {
-                sidebar.classList.add('active');
-                sidebarOverlay.classList.remove('active');
-            } else {
-                sidebar.classList.remove('active');
+                const data = await response.json();
+                updateOrderSummary(data.order_items);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to add product to order');
             }
         }
-        
-        window.addEventListener('resize', handleResize);
-        
-        // Initialize on load
-        handleResize();
+
+        async function updateQuantity(itemId, change) {
+            try {
+                const response = await fetch(`/update-order-item/${itemId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({change: change})
+                });
+                
+                if (!response.ok) throw new Error('Failed to update quantity');
+                
+                const data = await response.json();
+                updateOrderSummary(data.order_items);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to update quantity');
+            }
+        }
+
+        async function completeOrder() {
+            try {
+                const response = await fetch('/complete-order/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to complete order');
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('Order completed successfully!');
+                    // Clear the order summary
+                    updateOrderSummary([]);
+                    // Reload recent orders
+                    loadRecentOrders();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to complete order');
+            }
+        }
+
+        function updateOrderSummary(orderItems) {
+            const orderItemsContainer = document.querySelector('.order-items');
+            const orderTotalContainer = document.querySelector('.order-total');
+            const checkoutBtn = document.querySelector('.checkout-btn');
+            
+            // Clear existing items
+            orderItemsContainer.innerHTML = '';
+            
+            // Add new items
+            if (orderItems.length === 0) {
+                orderItemsContainer.innerHTML = '<p style="text-align: center; color: #666;">No items in order</p>';
+                checkoutBtn.disabled = true;
+            } else {
+                orderItems.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'order-item';
+                    itemElement.innerHTML = `
+                        <div class="item-info">
+                            <h4>${item.product_name}</h4>
+                            <div class="price">$${item.product_price.toFixed(2)}</div>
+                        </div>
+                        <div class="item-qty">
+                            <button onclick="updateQuantity(${item.id}, -1)">-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="updateQuantity(${item.id}, 1)">+</button>
+                        </div>
+                    `;
+                    orderItemsContainer.appendChild(itemElement);
+                });
+                
+                checkoutBtn.disabled = false;
+            }
+            
+            // Calculate and update totals
+            const subtotal = orderItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
+            const tax = subtotal * 0.1; // 10% tax
+            const total = subtotal + tax;
+            
+            orderTotalContainer.innerHTML = `
+                <div>
+                    <span>Subtotal</span>
+                    <span>$${subtotal.toFixed(2)}</span>
+                </div>
+                <div>
+                    <span>Tax (10%)</span>
+                    <span>$${tax.toFixed(2)}</span>
+                </div>
+                <div class="grand-total">
+                    <span>Total</span>
+                    <span>$${total.toFixed(2)}</span>
+                </div>
+            `;
+        }
+
+        async function loadActiveOrder() {
+            try {
+                const response = await fetch('/get-active-order/');
+                if (!response.ok) throw new Error('Failed to load active order');
+                
+                const data = await response.json();
+                if (data.order_items) {
+                    updateOrderSummary(data.order_items);
+                }
+            } catch (error) {
+                console.error('Error loading active order:', error);
+            }
+        }
+
+        async function loadRecentOrders() {
+            try {
+                const response = await fetch('/get-recent-orders/');
+                if (!response.ok) throw new Error('Failed to load recent orders');
+                
+                const data = await response.json();
+                // Update recent orders table (implementation depends on your backend)
+                console.log('Recent orders loaded:', data);
+            } catch (error) {
+                console.error('Error loading recent orders:', error);
+            }
+        }
+
+        // Attach complete order handler
+        document.querySelector('.checkout-btn').addEventListener('click', completeOrder);
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadActiveOrder();
+            loadRecentOrders();
+            
+            // Responsive handling
+            function handleResize() {
+                const isMobile = window.innerWidth < 768;
+                sidebar.classList.toggle('active', !isMobile);
+            }
+            
+            window.addEventListener('resize', handleResize);
+            handleResize();
+        });
     </script>
 </body>
 </html>

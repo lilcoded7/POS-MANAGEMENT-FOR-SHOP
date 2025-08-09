@@ -33,22 +33,6 @@
         }
         
         /* Sidebar Styles */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: var(--primary);
-            color: white;
-            height: 100vh;
-            position: fixed;
-            transition: transform 0.3s ease;
-            z-index: 1000;
-            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
-            transform: translateX(-100%);
-        }
-        
-        .sidebar.active {
-            transform: translateX(0);
-        }
-        
         .sidebar-overlay {
             position: fixed;
             top: 0;
@@ -65,6 +49,22 @@
         .sidebar-overlay.active {
             opacity: 1;
             visibility: visible;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transform: translateX(-100%);
+        }
+        
+        .sidebar.active {
+            transform: translateX(0);
         }
         
         .sidebar-header {
@@ -89,11 +89,16 @@
         .sidebar-menu li {
             list-style: none;
             margin-bottom: 5px;
-            padding: 10px 20px;
             transition: all 0.3s;
-            cursor: pointer;
+        }
+        
+        .sidebar-menu li a {
             display: flex;
             align-items: center;
+            padding: 12px 20px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s;
         }
         
         .sidebar-menu li:hover {
@@ -109,6 +114,8 @@
         .sidebar-menu li i {
             margin-right: 15px;
             color: var(--secondary);
+            width: 20px;
+            text-align: center;
         }
         
         /* Main Content */
@@ -676,6 +683,16 @@
             resize: vertical;
         }
         
+        .invalid-feedback {
+            color: #d32f2f;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+        
+        .is-invalid {
+            border-color: #d32f2f !important;
+        }
+        
         .modal-footer {
             display: flex;
             justify-content: flex-end;
@@ -721,10 +738,52 @@
             background-color: #b71c1c;
         }
         
+        /* Alerts */
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 5px;
+            z-index: 2100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.3s ease forwards;
+            max-width: 350px;
+        }
+        
+        .alert-success {
+            background-color: rgba(2, 138, 15, 0.9);
+            color: white;
+            border-left: 4px solid var(--success);
+        }
+        
+        .alert-danger {
+            background-color: rgba(211, 47, 47, 0.9);
+            color: white;
+            border-left: 4px solid #d32f2f;
+        }
+        
+        .alert .close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            margin-left: 15px;
+            cursor: pointer;
+        }
+        
         /* Animations */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
         }
         
         .card, .recent-orders, .product-search, .order-summary {
@@ -738,6 +797,25 @@
         .recent-orders { animation-delay: 0.5s; }
         .product-search { animation-delay: 0.6s; }
         .order-summary { animation-delay: 0.7s; }
+        
+        /* Loading Spinner */
+        .loading-spinner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--text);
+        }
+        
+        .loading-spinner i {
+            margin-right: 10px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
         
         /* Responsive Design */
         @media (min-width: 768px) {
@@ -818,7 +896,6 @@
         }
     </style>
 </head>
-
 <body>
     <!-- Sidebar Overlay -->
     <div class="sidebar-overlay"></div>
@@ -829,7 +906,6 @@
             <h3>LUXE POS</h3>
             <i class="fas fa-gem" style="color: var(--secondary);"></i>
         </div>
-        
         <ul class="sidebar-menu">
             <li class="active">
                 <a href="{% url 'home' %}">
@@ -844,14 +920,22 @@
                     <span>Products</span>
                 </a>
             </li>
-           
+
+             <li>
+                <a href="{% url 'orders' %}">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Orders</span>
+                </a>
+            </li>
+            
             <li>
                 <a href="{% url 'reports' %}">
                     <i class="fas fa-chart-bar"></i>
                     <span>Reports</span>
                 </a>
             </li>
-            
+           
+
             <li>
                 <a href="#">
                     <i class="fas fa-cog"></i>
@@ -866,8 +950,9 @@
             </li>
         </ul>
     </div>
-
-
+    
+    <!-- Main Content -->
+   
     <div class="main-content">
         <!-- Header -->
         <div class="header">
@@ -881,42 +966,6 @@
             </div>
         </div>
         
-        <!-- Analytics Cards -->
-        <div class="analytics-cards">
-            <div class="card">
-                <h3>Today's Sales</h3>
-                <div class="value">${{total_sales}}</div>
-                <div class="progress">
-                    <div class="progress-bar" style="width: 75%"></div>
-                </div>
-                <small>+12% from yesterday</small>
-            </div>
-            <div class="card">
-                <h3>Total Orders</h3>
-                <div class="value">{{order_count}}</div>
-                <div class="progress">
-                    <div class="progress-bar" style="width: 60%"></div>
-                </div>
-                <small>+8% from yesterday</small>
-            </div>
-            <div class="card">
-                <h3>Average Order Value</h3>
-                <div class="value">${{average_order_value}}</div>
-                <div class="progress">
-                    <div class="progress-bar" style="width: 45%"></div>
-                </div>
-                <small>+5% from yesterday</small>
-            </div>
-            <div class="card">
-                <h3>Canceled Orders</h3>
-                <div class="value">{{canceled_order}}</div>
-                <div class="progress">
-                    <div class="progress-bar" style="width: 90%"></div>
-                </div>
-                <small>32 sold today</small>
-            </div>
-        </div>
-         
        
 
 

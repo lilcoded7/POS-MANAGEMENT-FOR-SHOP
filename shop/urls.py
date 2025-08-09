@@ -3,13 +3,25 @@ from shop.views import *
 
 
 urlpatterns = [
-    path('', home, name='home'),
-    path('add-to-order/<int:product_id>/', add_to_order, name='add_to_order'),
-    path('update-order-item/<int:item_id>/', update_order_item, name='update_order_item'),
-    path('complete-order/', complete_order, name='complete_order'),
-    path('get-active-order/', get_active_order, name='get_active_order'),
-    path('get-recent-orders/', get_recent_orders, name='get_recent_orders'),
-    path('cancel/order/<int:order_id>', cancel_order, name='cancel_order'),
-    path('products/', products, name='products'),
-    path('reports/', reports, name='reports'),
+    path("", home, name="home"),
+    path("add-to-order/<int:product_id>/", add_to_order, name="add_to_order"),
+    path(
+        "update-order-item/<int:item_id>/", update_order_item, name="update_order_item"
+    ),
+    path("complete-order/", complete_order, name="complete_order"),
+    path("get-active-order/", get_active_order, name="get_active_order"),
+    path("get-recent-orders/", get_recent_orders, name="get_recent_orders"),
+    path("cancel/order/<int:order_id>", cancel_order, name="cancel_order"),
+    path("products/<int:product_id>/detail/", product_detail, name="product_detail"),
+    path("products/<int:product_id>/delete/", delete_product, name="delete_product"),
+    path("products/", products, name="products"),
+    path("reports/", reports, name="reports"),
+    path("orders/", orders, name="orders"),
+    path("orders/filter/", filter_orders, name="filter_orders"),
+    path("orders/<int:order_id>/cancel/", cancel_order, name="cancel_order"),
+    path("orders/<int:order_id>/delete/", delete_order, name="delete_order"),
+    path("reports/filter/", filter_reports, name="filter_reports"),
+    path("reports/<int:report_id>/detail/", report_detail, name="report_detail"),
+    path("reports/<int:report_id>/delete/", delete_report, name="delete_report"),
+    path('order/details/<int:order_id>', get_order_details, name='get_order_details')
 ]

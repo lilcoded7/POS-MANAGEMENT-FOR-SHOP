@@ -2,6 +2,7 @@ from django.db import models
 from setup.basemodel import BaseModel
 from shop.models.orders import Order
 from shop.models.products import Product
+from decimal import Decimal
 
 class OrderItem(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
@@ -12,5 +13,6 @@ class OrderItem(BaseModel):
         return f"{self.quantity} x {self.product.name}"
 
     def get_total_product_price(self):
-        product_price = self.quantity * self.product.selling_price
-        return product_price or 0.00
+        if self.product and self.product.selling_price:
+            return self.quantity * self.product.selling_price
+        return Decimal('0.00')

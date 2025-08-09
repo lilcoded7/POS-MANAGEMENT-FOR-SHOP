@@ -74,6 +74,7 @@ WSGI_APPLICATION = 'setup.wsgi.application'
 
 AUTH_USER_MODEL = 'accounts.User'
 
+
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
@@ -101,6 +102,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+]
+
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',  
 ]
 
 

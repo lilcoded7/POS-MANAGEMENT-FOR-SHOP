@@ -1,7 +1,7 @@
 from django.db import models
 from setup.basemodel import BaseModel
 from django.db.models import Max
-
+from decimal import Decimal
 
 class Order(BaseModel):
     status_choices = [
@@ -25,9 +25,10 @@ class Order(BaseModel):
 
     def get_total_price(self):
         total_order_price = sum(
-            item.get_total_product_price() for item in self.items.all()
+            (item.get_total_product_price() for item in self.items.all()),
+            Decimal('0.00')  
         )
-        return total_order_price or 0.00
+        return total_order_price
 
     def get_order_quantity(self):
         order_quantity = self.items.count()

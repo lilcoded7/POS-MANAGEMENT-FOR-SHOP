@@ -2,126 +2,131 @@
 {% load static %}
 
 {% block content %}
-     <!-- Analytics Cards -->
-        <div class="analytics-cards">
-            <div class="card">
-                <h3>Today's Sales</h3>
-                <div class="value">${{total_sales}}</div>
-                <div class="progress">
-                    <div class="progress-bar" style="width: 75%"></div>
-                </div>
-                <small>+12% from yesterday</small>
+    <!-- Analytics Cards -->
+    <div class="analytics-cards">
+        <div class="card">
+            <h3>Today's Sales</h3>
+            <div class="value">${{total_sales}}</div>
+            <div class="progress">
+                <div class="progress-bar" style="width: 75%"></div>
             </div>
-            <div class="card">
-                <h3>Total Orders</h3>
-                <div class="value">{{order_count}}</div>
-                <div class="progress">
-                    <div class="progress-bar" style="width: 60%"></div>
-                </div>
-                <small>+8% from yesterday</small>
-            </div>
-            <div class="card">
-                <h3>Average Order Value</h3>
-                <div class="value">${{average_order_value}}</div>
-                <div class="progress">
-                    <div class="progress-bar" style="width: 45%"></div>
-                </div>
-                <small>+5% from yesterday</small>
-            </div>
-            <div class="card">
-                <h3>Canceled Orders</h3>
-                <div class="value">{{canceled_order}}</div>
-                <div class="progress">
-                    <div class="progress-bar" style="width: 90%"></div>
-                </div>
-                <small>32 sold today</small>
-            </div>
+            <small>+12% from yesterday</small>
         </div>
-        
-        <!-- Recent Orders -->
-        <div class="recent-orders">
-            <h3>Recent Orders <span>View All</span></h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Items</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Time</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for order in orders|slice:':8' %}
-                    <tr>
-                        <td>#{{order.order_id}}</td>
-                        <td>{{order.get_order_quantity}}</td>
-                        <td>${{order.get_total_price}}</td>
-                        <td><span class="status completed">{{order.status}}</span></td>
-                        <td>{{order.created_at}}</td>
-                        <td>
-                            <div class="action-buttons">
-                                <a href="##" class="view-btn" onclick="viewOrderDetails('{{order.id}}')">
-                                    <i class="fas fa-eye"></i> View
-                                </a>
-                                <a href="##" class="cancel-btn" onclick="showCancelForm('{{order.id}}')">
-                                    <i class="fas fa-times"></i> Cancel
-                                </a>
-                               
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="card">
+            <h3>Total Orders</h3>
+            <div class="value">{{order_count}}</div>
+            <div class="progress">
+                <div class="progress-bar" style="width: 60%"></div>
+            </div>
+            <small>+8% from yesterday</small>
         </div>
-        
-        <!-- POS Actions -->
-        <div class="pos-actions">
-            <div class="product-search">
-                <h3>Products</h3>
-                <form method="POST" action="{% url 'home' %}">
-                    {% csrf_token %}
+        <div class="card">
+            <h3>Average Order Value</h3>
+            <div class="value">${{average_order_value}}</div>
+            <div class="progress">
+                <div class="progress-bar" style="width: 45%"></div>
+            </div>
+            <small>+5% from yesterday</small>
+        </div>
+        <div class="card">
+            <h3>Canceled Orders</h3>
+            <div class="value">{{canceled_order}}</div>
+            <div class="progress">
+                <div class="progress-bar" style="width: 90%"></div>
+            </div>
+            <small>32 sold today</small>
+        </div>
+    </div>
+    
+    <!-- Recent Orders -->
+    <div class="recent-orders">
+        <h3>Recent Orders <span>View All</span></h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Items</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders|slice:':8' %}
+                <tr>
+                    <td>#{{order.order_id}}</td>
+                    <td>{{order.get_order_quantity}}</td>
+                    <td>${{order.get_total_price}}</td>
+                    <td><span class="status completed">{{order.status}}</span></td>
+                    <td>{{order.created_at}}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="#" class="view-btn" onclick="viewOrderDetails('{{order.id}}')">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            {% if not order.is_canceled %}
+                            <a href="#" class="cancel-btn" onclick="showCancelForm('{{order.id}}')">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- POS Actions -->
+    <div class="pos-actions">
+        <div class="product-search">
+            <h3>Products</h3>
+            <form method="POST" action="{% url 'home' %}">
+                {% csrf_token %}
                 <div class="search-box">
                     <input type="text" name="name" placeholder="Search products...">
                     <button><i class="fas fa-search"></i></button>
                 </div>
-                </form>
-                <!-- Categories Scrollbar -->
-                <div class="categories-scroll">
-                    <button class="category-btn active">All Products</button>
-                    {% for category in categories %}
-                    <button class="category-btn">{{ category.name }}</button>
-                    {% endfor %}
-                </div>
-                
-                <div class="product-grid">
-                    {% for product in products %}
-                    <div data-id="{{product.id}}" class="product-card" data-category="{{ product.category.name|default:'' }}">
-                        <img src="https://st4.depositphotos.com/13324256/24475/i/450/depositphotos_244751462-stock-photo-top-view-product-lettering-made.jpg" alt="{{ product.name }}">
-                        <h4>{{ product.name }}</h4>
-                        <div class="price" style="color: #92f79c;">{{ product.status }}</div>
-                        <div class="price">${{ product.selling_price }}</div>
-                        <div class="price" style="color: #4ba8f9;">Stock Qty: {{ product.stock_quantity }}</div>
-                    </div>
-                    {% endfor %}
-                </div>
+            </form>
+            <!-- Categories Scrollbar -->
+            <div class="categories-scroll">
+                <button class="category-btn active">All Products</button>
+                {% for category in categories %}
+                <button class="category-btn">{{ category.name }}</button>
+                {% endfor %}
             </div>
             
-            <div class="order-summary">
-                <h3>Order Summary</h3>
-                <div class="order-items">
-                    <!-- Order items will be populated by JavaScript -->
+            <div class="product-grid">
+                {% for product in products %}
+                <div data-id="{{product.id}}" class="product-card" data-category="{{ product.category.name|default:'' }}">
+                    <img src="https://st4.depositphotos.com/13324256/24475/i/450/depositphotos_244751462-stock-photo-top-view-product-lettering-made.jpg" alt="{{ product.name }}">
+                    <h4>{{ product.name }}</h4>
+                    <div class="price" style="color: #92f79c;">{{ product.status }}</div>
+                    <div class="price">${{ product.selling_price }}</div>
+                    <div class="price" style="color: #4ba8f9;">Stock Qty: {{ product.stock_quantity }}</div>
                 </div>
-                <div class="order-total">
-                    <!-- Order totals will be populated by JavaScript -->
-                </div>
-                <button class="checkout-btn" disabled>Complete Order</button>
+                {% endfor %}
             </div>
         </div>
+        
+        <div class="order-summary">
+            <h3>Order Summary</h3>
+            <div class="order-items">
+                <!-- Order items will be populated by JavaScript -->
+            </div>
+            <div class="order-total">
+                <!-- Order totals will be populated by JavaScript -->
+            </div>
+            <button class="checkout-btn" onclick="completeOrder()" disabled>
+                <span class="btn-text">Complete Order</span>
+                <span class="btn-loading" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i> Processing...
+                </span>
+            </button>
+        </div>
     </div>
-    
+
     <!-- Cancel Order Modal -->
     <div id="cancelModal" class="modal">
         <div class="modal-content">
@@ -130,31 +135,49 @@
                 <button class="modal-close" onclick="closeModal('cancelModal')">&times;</button>
             </div>
             <div id="cancelFormContainer">
-                <div class="loading-spinner">
-                    <i class="fas fa-spinner fa-spin"></i> Loading cancellation form...
-                </div>
+                <form id="cancelOrderForm" method="POST" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="order_id" id="cancelOrderId" value="">
+                    <div class="form-group">
+                        <label for="reason">Reason for Cancellation</label>
+                        <select class="form-control" name="reason" id="reason" required>
+                            <option value="">Select a reason</option>
+                            {% for reason in reasons %}
+                            <option value="{{ reason.id }}">{{ reason.reason }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Additional Notes</label>
+                        <textarea class="form-control" name="notes" id="notes" rows="3"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('cancelModal')">Close</button>
+                        <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
     
     <!-- View Order Modal -->
     <div id="viewModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Order Details</h3>
-            <button class="modal-close" onclick="closeModal('viewModal')">&times;</button>
-        </div>
-        <div id="orderDetailsContent" style="font-family: Arial, sans-serif; color: #333;">
-            <!-- Content will be loaded dynamically -->
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('viewModal')">Close</button>
-            <button type="button" class="btn btn-primary" onclick="printOrder()">
-                <i class="fas fa-print"></i> Print Receipt
-            </button>
+        <div class="modal-content" style="margin: auto;">
+            <div class="modal-header">
+                <h3>Order Details</h3>
+                <button class="modal-close" onclick="closeModal('viewModal')">&times;</button>
+            </div>
+            <div id="orderDetailsContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('viewModal')">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printOrder()">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
+            </div>
         </div>
     </div>
-</div>
     
     <!-- Delete Confirmation Modal -->
     <div id="deleteModal" class="modal">
@@ -165,6 +188,7 @@
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to permanently delete this order? This action cannot be undone.</p>
+                <input type="hidden" id="deleteOrderId" value="">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
@@ -172,350 +196,308 @@
             </div>
         </div>
     </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <p>Processing your order...</p>
+        </div>
+    </div>
     
     <script>
-        // Toggle sidebar
-        const menuToggle = document.querySelector('.menu-toggle');
-        const sidebar = document.querySelector('.sidebar');
-        const sidebarOverlay = document.querySelector('.sidebar-overlay');
-        
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('active');
-            sidebarOverlay.classList.toggle('active');
-        });
-        
-        sidebarOverlay.addEventListener('click', () => {
-            sidebar.classList.remove('active');
-            sidebarOverlay.classList.remove('active');
-        });
+    // Toggle sidebar
+    const menuToggle = document.querySelector('.menu-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+    
+    menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+    });
+    
+    sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+    });
 
-        // Category filtering
-        document.querySelectorAll('.category-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Update active button
-                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                
-                const category = this.textContent === 'All Products' ? '' : this.textContent;
-                filterProductsByCategory(category);
-            });
+    // Category filtering
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            const category = this.textContent === 'All Products' ? '' : this.textContent;
+            filterProductsByCategory(category);
         });
+    });
 
-        function filterProductsByCategory(category) {
-            document.querySelectorAll('.product-card').forEach(card => {
-                const cardCategory = card.getAttribute('data-category');
-                if (category === '' || cardCategory === category) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
-
-        // Search functionality
-        document.querySelector('.search-box input').addEventListener('input', function() {
-            const term = this.value.toLowerCase();
-            document.querySelectorAll('.product-card').forEach(card => {
-                const name = card.querySelector('h4').textContent.toLowerCase();
-                card.style.display = name.includes(term) ? 'block' : 'none';
-            });
-        });
-
-        // Product click handler
+    function filterProductsByCategory(category) {
         document.querySelectorAll('.product-card').forEach(card => {
-            card.addEventListener('click', function() {
-                const productId = this.getAttribute('data-id');
-                addToOrder(productId);
-                
-                // Add click animation
-                this.style.transform = 'scale(0.95)';
-                setTimeout(() => this.style.transform = 'scale(1)', 200);
-            });
-        });
-
-        // Order management functions
-        async function addToOrder(productId) {
-            try {
-                const response = await fetch(`/add-to-order/${productId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({quantity: 1})
-                });
-                
-                if (!response.ok) throw new Error('Failed to add to order');
-                
-                const data = await response.json();
-                updateOrderSummary(data.order_items);
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('danger', 'Failed to add product to order');
-            }
-        }
-
-        async function updateQuantity(itemId, change) {
-            try {
-                const response = await fetch(`/update-order-item/${itemId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({change: change})
-                });
-                
-                if (!response.ok) throw new Error('Failed to update quantity');
-                
-                const data = await response.json();
-                updateOrderSummary(data.order_items);
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('danger', 'Failed to update quantity');
-            }
-        }
-
-        async function completeOrder() {
-            try {
-                const response = await fetch('/complete-order/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    }
-                });
-                
-                if (!response.ok) throw new Error('Failed to complete order');
-                
-                const data = await response.json();
-                if (data.success) {
-                    showAlert('success', 'Order completed successfully!');
-                    // Clear the order summary
-                    updateOrderSummary([]);
-                    // Reload recent orders
-                    loadRecentOrders();
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('danger', 'Failed to complete order');
-            }
-        }
-
-        function updateOrderSummary(orderItems) {
-            const orderItemsContainer = document.querySelector('.order-items');
-            const orderTotalContainer = document.querySelector('.order-total');
-            const checkoutBtn = document.querySelector('.checkout-btn');
-            
-            // Clear existing items
-            orderItemsContainer.innerHTML = '';
-            
-            // Add new items
-            if (orderItems.length === 0) {
-                orderItemsContainer.innerHTML = '<p style="text-align: center; color: #666;">No items in order</p>';
-                checkoutBtn.disabled = true;
+            const cardCategory = card.getAttribute('data-category');
+            if (category === '' || cardCategory === category) {
+                card.style.display = 'block';
             } else {
-                orderItems.forEach(item => {
-                    const itemElement = document.createElement('div');
-                    itemElement.className = 'order-item';
-                    itemElement.innerHTML = `
-                        <div class="item-info">
-                            <h4>${item.product_name}</h4>
-                            <div class="price">$${item.product_price.toFixed(2)}</div>
-                        </div>
-                        <div class="item-qty">
-                            <button onclick="updateQuantity(${item.id}, -1)">-</button>
-                            <span>${item.quantity}</span>
-                            <button onclick="updateQuantity(${item.id}, 1)">+</button>
-                        </div>
-                    `;
-                    orderItemsContainer.appendChild(itemElement);
-                });
-                
-                checkoutBtn.disabled = false;
+                card.style.display = 'none';
             }
-            
-            // Calculate and update totals
-            const subtotal = orderItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
-            const tax = subtotal * 0.1; // 10% tax
-            const total = subtotal + tax;
-            
-            orderTotalContainer.innerHTML = `
-                <div>
-                    <span>Subtotal</span>
-                    <span>$${subtotal.toFixed(2)}</span>
-                </div>
-                <div>
-                    <span>Tax (10%)</span>
-                    <span>$${tax.toFixed(2)}</span>
-                </div>
-                <div class="grand-total">
-                    <span>Total</span>
-                    <span>$${total.toFixed(2)}</span>
-                </div>
-            `;
-        }
+        });
+    }
 
-        async function loadActiveOrder() {
-            try {
-                const response = await fetch('/get-active-order/');
-                if (!response.ok) throw new Error('Failed to load active order');
-                
-                const data = await response.json();
-                if (data.order_items) {
-                    updateOrderSummary(data.order_items);
+    // Search functionality
+    document.querySelector('.search-box input').addEventListener('input', function() {
+        const term = this.value.toLowerCase();
+        document.querySelectorAll('.product-card').forEach(card => {
+            const name = card.querySelector('h4').textContent.toLowerCase();
+            card.style.display = name.includes(term) ? 'block' : 'none';
+        });
+    });
+
+    // Product click handler
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const productId = this.getAttribute('data-id');
+            addToOrder(productId);
+            
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => this.style.transform = 'scale(1)', 200);
+        });
+    });
+
+    // Order management functions
+    async function addToOrder(productId) {
+        try {
+            const response = await fetch(`/add-to-order/${productId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({quantity: 1})
+            });
+            
+            if (!response.ok) throw new Error('Failed to add to order');
+            
+            const data = await response.json();
+            updateOrderSummary(data.order_items);
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('danger', 'Failed to add product to order');
+        }
+    }
+
+    async function updateQuantity(itemId, change) {
+        try {
+            const response = await fetch(`/update-order-item/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({change: change})
+            });
+            
+            if (!response.ok) throw new Error('Failed to update quantity');
+            
+            const data = await response.json();
+            updateOrderSummary(data.order_items);
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('danger', 'Failed to update quantity');
+        }
+    }
+
+    async function completeOrder() {
+        const checkoutBtn = document.querySelector('.checkout-btn');
+        const btnText = checkoutBtn.querySelector('.btn-text');
+        const btnLoading = checkoutBtn.querySelector('.btn-loading');
+        
+        // Show loading state
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'inline-block';
+        checkoutBtn.disabled = true;
+        
+        try {
+            const response = await fetch('/complete-order/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
                 }
-            } catch (error) {
-                console.error('Error loading active order:', error);
-            }
-        }
-
-        async function loadRecentOrders() {
-            try {
-                const response = await fetch('/get-recent-orders/');
-                if (!response.ok) throw new Error('Failed to load recent orders');
-                
-                const data = await response.json();
-                // Update recent orders table (implementation depends on your backend)
-                console.log('Recent orders loaded:', data);
-            } catch (error) {
-                console.error('Error loading recent orders:', error);
-            }
-        }
-
-        // Modal functions
-        async function showCancelForm(orderId) {
-            const modal = document.getElementById('cancelModal');
-            modal.style.display = 'flex';
+            });
             
-            try {
-                const response = await fetch(`/cancel/order/${orderId}/`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
+            if (!response.ok) throw new Error('Failed to complete order');
+            
+            const data = await response.json();
+            if (data.success) {
+                // Show success message and refresh page
+                showLoadingOverlay('Order completed successfully!');
                 
-                if (!response.ok) throw new Error('Failed to load form');
-                
-                const html = await response.text();
-                document.getElementById('cancelFormContainer').innerHTML = html;
-                
-                // Attach form submission handler
-                const form = document.getElementById('cancelOrderForm');
-                if (form) {
-                    form.addEventListener('submit', handleCancelSubmit);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('cancelFormContainer').innerHTML = `
-                    <div class="alert alert-danger">
-                        Failed to load cancellation form. Please try again.
+                // Refresh page after 2 seconds
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                throw new Error(data.error || 'Failed to complete order');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('danger', error.message);
+        } finally {
+            // Reset button state
+            btnText.style.display = 'inline-block';
+            btnLoading.style.display = 'none';
+            checkoutBtn.disabled = false;
+        }
+    }
+
+    function updateOrderSummary(orderItems) {
+        const orderItemsContainer = document.querySelector('.order-items');
+        const orderTotalContainer = document.querySelector('.order-total');
+        const checkoutBtn = document.querySelector('.checkout-btn');
+        
+        orderItemsContainer.innerHTML = '';
+        
+        if (orderItems.length === 0) {
+            orderItemsContainer.innerHTML = '<p style="text-align: center; color: #666;">No items in order</p>';
+            checkoutBtn.disabled = true;
+        } else {
+            orderItems.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'order-item';
+                itemElement.innerHTML = `
+                    <div class="item-info">
+                        <h4>${item.product_name}</h4>
+                        <div class="price">$${item.product_price.toFixed(2)}</div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('cancelModal')">Close</button>
+                    <div class="item-qty">
+                        <button onclick="updateQuantity(${item.id}, -1)">-</button>
+                        <span>${item.quantity}</span>
+                        <button onclick="updateQuantity(${item.id}, 1)">+</button>
                     </div>
                 `;
-            }
-        }
-
-        async function handleCancelSubmit(e) {
-            e.preventDefault();
-            const form = e.target;
-            const formData = new FormData(form);
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.innerHTML;
+                orderItemsContainer.appendChild(itemElement);
+            });
             
-            try {
-                // Show loading state
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            checkoutBtn.disabled = false;
+        }
+        
+        const subtotal = orderItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
+        const tax = subtotal * 0.1;
+        const total = subtotal + tax;
+        
+        orderTotalContainer.innerHTML = `
+            <div>
+                <span>Subtotal</span>
+                <span>$${subtotal.toFixed(2)}</span>
+            </div>
+            <div>
+                <span>Tax (10%)</span>
+                <span>$${tax.toFixed(2)}</span>
+            </div>
+            <div class="grand-total">
+                <span>Total</span>
+                <span>$${total.toFixed(2)}</span>
+            </div>
+        `;
+    }
+
+    async function loadActiveOrder() {
+        try {
+            const response = await fetch('/get-active-order/');
+            if (!response.ok) throw new Error('Failed to load active order');
+            
+            const data = await response.json();
+            if (data.order_items) {
+                updateOrderSummary(data.order_items);
+            }
+        } catch (error) {
+            console.error('Error loading active order:', error);
+        }
+    }
+
+    async function loadRecentOrders() {
+        try {
+            const response = await fetch('/get-recent-orders/');
+            if (!response.ok) throw new Error('Failed to load recent orders');
+            
+            const data = await response.json();
+            console.log('Recent orders loaded:', data);
+        } catch (error) {
+            console.error('Error loading recent orders:', error);
+        }
+    }
+
+    // Enhanced Cancel Order Functions
+    function showCancelForm(orderId) {
+        const modal = document.getElementById('cancelModal');
+        document.getElementById('cancelOrderId').value = orderId;
+        
+        // Reset form
+        const form = document.getElementById('cancelOrderForm');
+        form.reset();
+        form.action = `/cancel-order/${orderId}/`;
+        
+        modal.style.display = 'flex';
+    }
+
+    async function handleCancelSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        
+        try {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert('success', 'Order canceled successfully');
+                closeModal('cancelModal');
                 
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Show success message and close modal
-                    showAlert('success', data.message || 'Order canceled successfully');
-                    closeModal('cancelModal');
-                    // Refresh orders table
-                    loadRecentOrders();
-                } else {
-                    // Show error message
-                    showAlert('danger', data.message || 'Failed to cancel order');
-                    if (data.errors) {
-                        // Update form with validation errors
-                        updateFormErrors(form, data.errors);
+                // Update the UI to reflect the canceled order
+                const orderRow = document.querySelector(`tr:has(td:contains("#${data.order_id}"))`);
+                if (orderRow) {
+                    const statusCell = orderRow.querySelector('.status');
+                    statusCell.textContent = 'Canceled';
+                    statusCell.className = 'status canceled';
+                    
+                    // Disable cancel button
+                    const cancelBtn = orderRow.querySelector('.cancel-btn');
+                    if (cancelBtn) {
+                        cancelBtn.style.display = 'none';
                     }
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('danger', 'An error occurred while canceling the order');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
+                
+                // Optionally refresh recent orders
+                loadRecentOrders();
+            } else {
+                throw new Error(data.error || 'Failed to cancel order');
             }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('danger', error.message || 'An error occurred while canceling the order');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
         }
+    }
 
-        function updateFormErrors(form, errors) {
-            // Clear previous errors
-            form.querySelectorAll('.is-invalid').forEach(el => {
-                el.classList.remove('is-invalid');
-            });
-            form.querySelectorAll('.invalid-feedback').forEach(el => {
-                el.remove();
-            });
-            
-            // Add new errors
-            for (const field in errors) {
-                const input = form.querySelector(`[name="${field}"]`);
-                if (input) {
-                    input.classList.add('is-invalid');
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'invalid-feedback';
-                    errorDiv.textContent = errors[field].join(' ');
-                    input.parentNode.appendChild(errorDiv);
-                }
-            }
-        }
-
-        function showAlert(type, message) {
-            // Remove any existing alerts
-            const existingAlert = document.querySelector('.alert');
-            if (existingAlert) {
-                existingAlert.remove();
-            }
-            
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.innerHTML = `
-                ${message}
-                <button class="close">&times;</button>
-            `;
-            
-            document.body.appendChild(alert);
-            
-            // Close button handler
-            alert.querySelector('.close').addEventListener('click', () => {
-                alert.remove();
-            });
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                alert.style.animation = 'fadeOut 0.3s ease forwards';
-                setTimeout(() => alert.remove(), 300);
-            }, 5000);
-        }
-
-        function viewOrderDetails(orderId) {
-        // Show loading state
+    async function viewOrderDetails(orderId) {
         const orderDetailsContent = document.getElementById('orderDetailsContent');
         orderDetailsContent.innerHTML = `
             <div class="loading-spinner">
@@ -523,145 +505,263 @@
             </div>
         `;
         
-        // Open the modal
-        document.getElementById('viewModal').style.display = 'block';
+        document.getElementById('viewModal').style.display = 'flex';
         
-        // Fetch order details via AJAX
-        fetch(`/get-order-details/${orderId}/`)
-            .then(response => response.json())
-            .then(data => {
-                // Format the order date
-                const orderDate = new Date(data.order.created_at);
-                const formattedDate = orderDate.toLocaleString();
-                
-                // Build order items table
-                let itemsTable = '';
-                if (data.order_items && data.order_items.length > 0) {
-                    itemsTable = `
-                        <h4 style="margin: 20px 0 10px; color: #4361ee;">Items</h4>
-                        <div style="width: 100%; overflow: auto;">
-                            <table style="width: fit-content; border-collapse: collapse; margin-bottom: 20px;">
-                                <thead>
-                                    <tr style="background-color: #f8f9fa;">
-                                        <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Item</th>
-                                        <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Price</th>
-                                        <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Qty</th>
-                                        <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${data.order_items.map(item => `
-                                        <tr>
-                                            <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.product.name}</td>
-                                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.product.selling_price}</td>
-                                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${item.quantity}</td>
-                                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.get_total_product_price}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
+        try {
+            const response = await fetch(`/get-order-details/${orderId}/`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
-                
-                // Update the modal content
-                orderDetailsContent.innerHTML = `
-                    <div style="margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span style="font-weight: bold;">Order ID:</span>
-                            <span>${data.order.order_id}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span style="font-weight: bold;">Date:</span>
-                            <span>${formattedDate}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                            <span style="font-weight: bold;">Status:</span>
-                            <span style="background-color: #e6f7ff; color: #1890ff; padding: 3px 8px; border-radius: 4px;">
-                                ${data.order.status}
-                            </span>
-                        </div>
-                    </div>
-                    ${itemsTable}
-                    <div style="border-top: 1px solid #eee; padding-top: 15px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span>Subtotal:</span>
-                            <span>$${data.order.total_price}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1em; margin-top: 10px;">
-                            <span>Total:</span>
-                            <span>$${data.order.total_price}</span>
-                        </div>
-                    </div>
-                `;
-            })
-            .catch(error => {
-                orderDetailsContent.innerHTML = `
-                    <div class="alert alert-danger">
-                        Error loading order details: ${error.message}
-                    </div>
-                `;
             });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error("Response wasn't JSON");
+            }
+
+            const data = await response.json();
+            
+            const orderDate = new Date(data.order.created_at);
+            const formattedDate = orderDate.toLocaleString();
+            
+            let itemsTable = '';
+            if (data.order_items && data.order_items.length > 0) {
+                itemsTable = `
+                    <h4 style="margin: 20px 0 10px; color: #4361ee;">Items</h4>
+                    <div style="width: 100%; overflow: auto;">
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                            <thead>
+                                <tr style="background-color: #f8f9fa;">
+                                    <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Item</th>
+                                    <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Price</th>
+                                    <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Qty</th>
+                                    <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.order_items.map(item => `
+                                    <tr>
+                                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.product.name}</td>
+                                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.product.selling_price}</td>
+                                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${item.quantity}</td>
+                                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.get_total_product_price}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            // Add cancellation report if order is canceled
+            let cancellationInfo = '';
+            if (data.order.is_canceled && data.order.cancellation_report) {
+                cancellationInfo = `
+                    <div style="margin-top: 20px; padding: 15px; background-color: #fff8f8; border-radius: 5px; border-left: 4px solid #ff6b6b;">
+                        <h4 style="margin-bottom: 10px; color: #ff6b6b;">Cancellation Details</h4>
+                        <div style="margin-bottom: 8px;">
+                            <strong>Reason:</strong> ${data.order.cancellation_report.reason || 'Not specified'}
+                        </div>
+                        <div>
+                            <strong>Notes:</strong> ${data.order.cancellation_report.notes || 'None'}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            orderDetailsContent.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: bold;">Order ID:</span>
+                        <span>${data.order.order_id}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: bold;">Date:</span>
+                        <span>${formattedDate}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                        <span style="font-weight: bold;">Status:</span>
+                        <span style="background-color: ${data.order.is_canceled ? '#ffebee' : '#e6f7ff'}; 
+                              color: ${data.order.is_canceled ? '#f44336' : '#1890ff'}; 
+                              padding: 3px 8px; border-radius: 4px;">
+                            ${data.order.status}
+                        </span>
+                    </div>
+                </div>
+                ${itemsTable}
+                <div style="border-top: 1px solid #eee; padding-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>Subtotal:</span>
+                        <span>$${data.order.total_price}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1em; margin-top: 10px;">
+                        <span>Total:</span>
+                        <span>$${data.order.total_price}</span>
+                    </div>
+                </div>
+                ${cancellationInfo}
+            `;
+        } catch (error) {
+            console.error('Error loading order details:', error);
+            orderDetailsContent.innerHTML = `
+                <div class="alert alert-danger">
+                    Error loading order details: ${error.message}
+                </div>
+            `;
+        }
     }
 
-
-        function confirmDelete(orderId) {
-            document.getElementById('deleteOrderId').value = orderId;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
-
-        async function deleteOrder() {
-            const orderId = document.getElementById('deleteOrderId').value;
-            try {
-                const response = await fetch(`/delete-order/${orderId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showAlert('success', 'Order deleted successfully');
-                    closeModal('deleteModal');
-                    loadRecentOrders();
-                } else {
-                    showAlert('danger', data.message || 'Failed to delete order');
+    async function deleteOrder() {
+        const orderId = document.getElementById('deleteOrderId').value;
+        try {
+            const response = await fetch(`/delete-order/${orderId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('danger', 'An error occurred while deleting the order');
-            }
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        function printOrder() {
-            // Implement print functionality
-            alert('Print functionality would be implemented here');
-        }
-
-        // Attach event listeners
-        document.querySelector('.checkout-btn').addEventListener('click', completeOrder);
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadActiveOrder();
-            loadRecentOrders();
+            });
             
-            // Responsive handling
-            function handleResize() {
-                const isMobile = window.innerWidth < 768;
-                sidebar.classList.toggle('active', !isMobile);
-            }
+            const data = await response.json();
             
-            window.addEventListener('resize', handleResize);
-            handleResize();
+            if (data.success) {
+                showAlert('success', 'Order deleted successfully');
+                closeModal('deleteModal');
+                loadRecentOrders();
+            } else {
+                showAlert('danger', data.message || 'Failed to delete order');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('danger', 'An error occurred while deleting the order');
+        }
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    function printOrder() {
+        const printContent = document.getElementById('orderDetailsContent').innerHTML;
+        const originalContent = document.body.innerHTML;
+        
+        document.body.innerHTML = `
+            <div style="padding: 20px; font-family: Arial, sans-serif;">
+                <h2 style="text-align: center; margin-bottom: 20px;">Order Receipt</h2>
+                ${printContent}
+            </div>
+        `;
+        
+        window.print();
+        document.body.innerHTML = originalContent;
+        document.getElementById('viewModal').style.display = 'flex';
+    }
+
+    function showAlert(type, message) {
+        const existingAlert = document.querySelector('.alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.innerHTML = `
+            ${message}
+            <button class="close">&times;</button>
+        `;
+        
+        document.body.appendChild(alert);
+        
+        alert.querySelector('.close').addEventListener('click', () => {
+            alert.remove();
         });
-    </script>
+        
+        setTimeout(() => {
+            alert.style.animation = 'fadeOut 0.3s ease forwards';
+            setTimeout(() => alert.remove(), 300);
+        }, 5000);
+    }
 
-    {% endblock content %}
+    function showLoadingOverlay(message = '') {
+        const overlay = document.getElementById('loadingOverlay');
+        const content = overlay.querySelector('.loading-content p');
+        
+        if (message) {
+            content.textContent = message;
+        }
+        
+        overlay.style.display = 'flex';
+    }
+
+    function hideLoadingOverlay() {
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    // Initialize event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        loadActiveOrder();
+        loadRecentOrders();
+        
+        const cancelForm = document.getElementById('cancelOrderForm');
+        if (cancelForm) {
+            cancelForm.addEventListener('submit', handleCancelSubmit);
+        }
+        
+        function handleResize() {
+            const isMobile = window.innerWidth < 768;
+            sidebar.classList.toggle('active', !isMobile);
+        }
+        
+        window.addEventListener('resize', handleResize);
+        handleResize();
+    });
+</script>
+
+    <style>
+        /* Add these styles to your CSS */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            color: #333;
+        }
+        
+        .loading-content i {
+            margin-bottom: 15px;
+            color: #4361ee;
+        }
+        
+        .modal {
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .checkout-btn .btn-text,
+        .checkout-btn .btn-loading {
+            display: inline-block;
+        }
+    </style>
+{% endblock content %}

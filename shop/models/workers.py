@@ -8,6 +8,7 @@ User = get_user_model()
 class Worker(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
+    email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=100)
     id_card = models.CharField(max_length=100)
     id_image = models.ImageField()

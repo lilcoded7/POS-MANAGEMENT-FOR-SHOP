@@ -57,3 +57,36 @@ class EmailAuthenticationForm(forms.Form):
 
     def get_user(self):
         return self.user_cache
+
+
+class EmailForm(forms.Form):
+    email = forms.EmailField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                'class':'form-control',
+                'placeholder':'enter email'
+            }
+        )
+    )
+
+
+class ResetPasswordForm(forms.Form):
+    code = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                'class':'form-control',
+                'placeholder':'enter code'
+            }
+        )
+    )
+    new_password = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                'class':'form-control',
+                'placeholder':'enter new password'
+            }
+        )
+    )

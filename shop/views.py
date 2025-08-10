@@ -623,6 +623,7 @@ def workers(request):
 
 def delete_worker(request, worker_id):
     worker = get_object_or_404(Worker, id=worker_id)
+    worker.user.delete()
     worker.delete()
     messages.success(request, 'worker deleted successfully ')
     return redirect('workers')

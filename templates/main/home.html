@@ -206,523 +206,459 @@
     </div>
     
     <script>
-    // Toggle sidebar
-    const menuToggle = document.querySelector('.menu-toggle');
-    const sidebar = document.querySelector('.sidebar');
-    const sidebarOverlay = document.querySelector('.sidebar-overlay');
-    
-    menuToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('active');
-        sidebarOverlay.classList.toggle('active');
-    });
-    
-    sidebarOverlay.addEventListener('click', () => {
-        sidebar.classList.remove('active');
-        sidebarOverlay.classList.remove('active');
-    });
-
-    // Category filtering
-    document.querySelectorAll('.category-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            
-            const category = this.textContent === 'All Products' ? '' : this.textContent;
-            filterProductsByCategory(category);
-        });
-    });
-
-    function filterProductsByCategory(category) {
-        document.querySelectorAll('.product-card').forEach(card => {
-            const cardCategory = card.getAttribute('data-category');
-            if (category === '' || cardCategory === category) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
-        });
-    }
-
-    // Search functionality
-    document.querySelector('.search-box input').addEventListener('input', function() {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll('.product-card').forEach(card => {
-            const name = card.querySelector('h4').textContent.toLowerCase();
-            card.style.display = name.includes(term) ? 'block' : 'none';
-        });
-    });
-
-    // Product click handler
-    document.querySelectorAll('.product-card').forEach(card => {
-        card.addEventListener('click', function() {
-            const productId = this.getAttribute('data-id');
-            addToOrder(productId);
-            
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => this.style.transform = 'scale(1)', 200);
-        });
-    });
-
-    // Order management functions
-    async function addToOrder(productId) {
-        try {
-            const response = await fetch(`/add-to-order/${productId}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({quantity: 1})
-            });
-            
-            if (!response.ok) throw new Error('Failed to add to order');
-            
-            const data = await response.json();
-            updateOrderSummary(data.order_items);
-        } catch (error) {
-            console.error('Error:', error);
-            showAlert('danger', 'Failed to add product to order');
-        }
-    }
-
-    async function updateQuantity(itemId, change) {
-        try {
-            const response = await fetch(`/update-order-item/${itemId}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({change: change})
-            });
-            
-            if (!response.ok) throw new Error('Failed to update quantity');
-            
-            const data = await response.json();
-            updateOrderSummary(data.order_items);
-        } catch (error) {
-            console.error('Error:', error);
-            showAlert('danger', 'Failed to update quantity');
-        }
-    }
-
-    async function completeOrder() {
-        const checkoutBtn = document.querySelector('.checkout-btn');
-        const btnText = checkoutBtn.querySelector('.btn-text');
-        const btnLoading = checkoutBtn.querySelector('.btn-loading');
+        // Toggle sidebar
+        const menuToggle = document.querySelector('.menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarOverlay = document.querySelector('.sidebar-overlay');
         
-        // Show loading state
-        btnText.style.display = 'none';
-        btnLoading.style.display = 'inline-block';
-        checkoutBtn.disabled = true;
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        });
         
-        try {
-            const response = await fetch('/complete-order/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+        });
+
+        // Category filtering
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const category = this.textContent === 'All Products' ? '' : this.textContent;
+                filterProductsByCategory(category);
+            });
+        });
+
+        function filterProductsByCategory(category) {
+            document.querySelectorAll('.product-card').forEach(card => {
+                const cardCategory = card.getAttribute('data-category');
+                if (category === '' || cardCategory === category) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
                 }
             });
-            
-            if (!response.ok) throw new Error('Failed to complete order');
-            
-            const data = await response.json();
-            if (data.success) {
-                // Show success message and refresh page
-                showLoadingOverlay('Order completed successfully!');
-                
-                // Refresh page after 2 seconds
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            } else {
-                throw new Error(data.error || 'Failed to complete order');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showAlert('danger', error.message);
-        } finally {
-            // Reset button state
-            btnText.style.display = 'inline-block';
-            btnLoading.style.display = 'none';
-            checkoutBtn.disabled = false;
         }
-    }
 
-    function updateOrderSummary(orderItems) {
-        const orderItemsContainer = document.querySelector('.order-items');
-        const orderTotalContainer = document.querySelector('.order-total');
-        const checkoutBtn = document.querySelector('.checkout-btn');
-        
-        orderItemsContainer.innerHTML = '';
-        
-        if (orderItems.length === 0) {
-            orderItemsContainer.innerHTML = '<p style="text-align: center; color: #666;">No items in order</p>';
-            checkoutBtn.disabled = true;
-        } else {
-            orderItems.forEach(item => {
-                const itemElement = document.createElement('div');
-                itemElement.className = 'order-item';
-                itemElement.innerHTML = `
-                    <div class="item-info">
-                        <h4>${item.product_name}</h4>
-                        <div class="price">$${item.product_price.toFixed(2)}</div>
-                    </div>
-                    <div class="item-qty">
-                        <button onclick="updateQuantity(${item.id}, -1)">-</button>
-                        <span>${item.quantity}</span>
-                        <button onclick="updateQuantity(${item.id}, 1)">+</button>
-                    </div>
-                `;
-                orderItemsContainer.appendChild(itemElement);
+        // Search functionality
+        document.querySelector('.search-box input').addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            document.querySelectorAll('.product-card').forEach(card => {
+                const name = card.querySelector('h4').textContent.toLowerCase();
+                card.style.display = name.includes(term) ? 'block' : 'none';
             });
-            
-            checkoutBtn.disabled = false;
-        }
-        
-        const subtotal = orderItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
-        const tax = subtotal * 0.1;
-        const total = subtotal + tax;
-        
-        orderTotalContainer.innerHTML = `
-            <div>
-                <span>Subtotal</span>
-                <span>$${subtotal.toFixed(2)}</span>
-            </div>
-            <div>
-                <span>Tax (10%)</span>
-                <span>$${tax.toFixed(2)}</span>
-            </div>
-            <div class="grand-total">
-                <span>Total</span>
-                <span>$${total.toFixed(2)}</span>
-            </div>
-        `;
-    }
+        });
 
-    async function loadActiveOrder() {
-        try {
-            const response = await fetch('/get-active-order/');
-            if (!response.ok) throw new Error('Failed to load active order');
-            
-            const data = await response.json();
-            if (data.order_items) {
+        // Product click handler
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const productId = this.getAttribute('data-id');
+                addToOrder(productId);
+                
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => this.style.transform = 'scale(1)', 200);
+            });
+        });
+
+        // Order management functions
+        async function addToOrder(productId) {
+            try {
+                const response = await fetch(`/add-to-order/${productId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({quantity: 1})
+                });
+                
+                if (!response.ok) throw new Error('Failed to add to order');
+                
+                const data = await response.json();
                 updateOrderSummary(data.order_items);
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('danger', 'Failed to add product to order');
             }
-        } catch (error) {
-            console.error('Error loading active order:', error);
         }
-    }
 
-    async function loadRecentOrders() {
-        try {
-            const response = await fetch('/get-recent-orders/');
-            if (!response.ok) throw new Error('Failed to load recent orders');
-            
-            const data = await response.json();
-            console.log('Recent orders loaded:', data);
-        } catch (error) {
-            console.error('Error loading recent orders:', error);
-        }
-    }
-
-    // Enhanced Cancel Order Functions
-    function showCancelForm(orderId) {
-        const modal = document.getElementById('cancelModal');
-        document.getElementById('cancelOrderId').value = orderId;
-        
-        // Reset form
-        const form = document.getElementById('cancelOrderForm');
-        form.reset();
-        form.action = `/cancel-order/${orderId}/`;
-        
-        modal.style.display = 'flex';
-    }
-
-    async function handleCancelSubmit(e) {
-        e.preventDefault();
-        const form = e.target;
-        const formData = new FormData(form);
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn.innerHTML;
-        
-        try {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                showAlert('success', 'Order canceled successfully');
-                closeModal('cancelModal');
+        async function updateQuantity(itemId, change) {
+            try {
+                const response = await fetch(`/update-order-item/${itemId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({change: change})
+                });
                 
-                // Update the UI to reflect the canceled order
-                const orderRow = document.querySelector(`tr:has(td:contains("#${data.order_id}"))`);
-                if (orderRow) {
-                    const statusCell = orderRow.querySelector('.status');
-                    statusCell.textContent = 'Canceled';
-                    statusCell.className = 'status canceled';
-                    
-                    // Disable cancel button
-                    const cancelBtn = orderRow.querySelector('.cancel-btn');
-                    if (cancelBtn) {
-                        cancelBtn.style.display = 'none';
+                if (!response.ok) throw new Error('Failed to update quantity');
+                
+                const data = await response.json();
+                updateOrderSummary(data.order_items);
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('danger', 'Failed to update quantity');
+            }
+        }
+
+        async function completeOrder() {
+            const checkoutBtn = document.querySelector('.checkout-btn');
+            const btnText = checkoutBtn.querySelector('.btn-text');
+            const btnLoading = checkoutBtn.querySelector('.btn-loading');
+            
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-block';
+            checkoutBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/complete-order/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
                     }
+                });
+                
+                if (!response.ok) throw new Error('Failed to complete order');
+                
+                const data = await response.json();
+                if (data.success) {
+                    showLoadingOverlay('Order completed successfully!');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    throw new Error(data.error || 'Failed to complete order');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('danger', error.message);
+            } finally {
+                btnText.style.display = 'inline-block';
+                btnLoading.style.display = 'none';
+                checkoutBtn.disabled = false;
+            }
+        }
+
+        function updateOrderSummary(orderItems) {
+            const orderItemsContainer = document.querySelector('.order-items');
+            const orderTotalContainer = document.querySelector('.order-total');
+            const checkoutBtn = document.querySelector('.checkout-btn');
+            
+            orderItemsContainer.innerHTML = '';
+            
+            if (orderItems.length === 0) {
+                orderItemsContainer.innerHTML = '<p style="text-align: center; color: #666;">No items in order</p>';
+                checkoutBtn.disabled = true;
+            } else {
+                orderItems.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'order-item';
+                    itemElement.innerHTML = `
+                        <div class="item-info">
+                            <h4>${item.product_name}</h4>
+                            <div class="price">$${item.product_price.toFixed(2)}</div>
+                        </div>
+                        <div class="item-qty">
+                            <button onclick="updateQuantity(${item.id}, -1)">-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="updateQuantity(${item.id}, 1)">+</button>
+                        </div>
+                    `;
+                    orderItemsContainer.appendChild(itemElement);
+                });
+                
+                checkoutBtn.disabled = false;
+            }
+            
+            const subtotal = orderItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
+            const tax = subtotal * 0.1;
+            const total = subtotal + tax;
+            
+            orderTotalContainer.innerHTML = `
+                <div>
+                    <span>Subtotal</span>
+                    <span>$${subtotal.toFixed(2)}</span>
+                </div>
+                <div>
+                    <span>Tax (10%)</span>
+                    <span>$${tax.toFixed(2)}</span>
+                </div>
+                <div class="grand-total">
+                    <span>Total</span>
+                    <span>$${total.toFixed(2)}</span>
+                </div>
+            `;
+        }
+
+        async function loadActiveOrder() {
+            try {
+                const response = await fetch('/get-active-order/');
+                if (!response.ok) throw new Error('Failed to load active order');
+                
+                const data = await response.json();
+                if (data.order_items) {
+                    updateOrderSummary(data.order_items);
+                }
+            } catch (error) {
+                console.error('Error loading active order:', error);
+            }
+        }
+
+        async function loadRecentOrders() {
+            try {
+                const response = await fetch('/get-recent-orders/');
+                if (!response.ok) throw new Error('Failed to load recent orders');
+                
+                const data = await response.json();
+                console.log('Recent orders loaded:', data);
+            } catch (error) {
+                console.error('Error loading recent orders:', error);
+            }
+        }
+
+        // Modal functions
+        function showCancelForm(orderId) {
+            const modal = document.getElementById('cancelModal');
+            document.getElementById('cancelOrderId').value = orderId;
+            modal.style.display = 'flex';
+        }
+
+        async function handleCancelSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const orderId = document.getElementById('cancelOrderId').value;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                
+                const response = await fetch(`/cancel-order/${orderId}/`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('success', data.message || 'Order canceled successfully');
+                    closeModal('cancelModal');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showAlert('danger', data.message || 'Failed to cancel order');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('danger', 'An error occurred while canceling the order');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        }
+
+        async function viewOrderDetails(orderId) {
+            const orderDetailsContent = document.getElementById('orderDetailsContent');
+            orderDetailsContent.innerHTML = `
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading order details...
+                </div>
+            `;
+            
+            document.getElementById('viewModal').style.display = 'flex';
+            
+            try {
+                const response = await fetch(`/get-order-details/${orderId}/`);
+                const data = await response.json();
+                
+                const orderDate = new Date(data.order.created_at);
+                const formattedDate = orderDate.toLocaleString();
+                
+                let itemsTable = '';
+                if (data.order_items && data.order_items.length > 0) {
+                    itemsTable = `
+                        <h4 style="margin: 20px 0 10px; color: #4361ee;">Items</h4>
+                        <div style="width: 100%; overflow: auto;">
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                                <thead>
+                                    <tr style="background-color: #f8f9fa;">
+                                        <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Item</th>
+                                        <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Price</th>
+                                        <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Qty</th>
+                                        <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.order_items.map(item => `
+                                        <tr>
+                                            <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.product.name}</td>
+                                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.product.selling_price}</td>
+                                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${item.quantity}</td>
+                                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.get_total_product_price}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
                 }
                 
-                // Optionally refresh recent orders
-                loadRecentOrders();
-            } else {
-                throw new Error(data.error || 'Failed to cancel order');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showAlert('danger', error.message || 'An error occurred while canceling the order');
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnText;
-        }
-    }
-
-    async function viewOrderDetails(orderId) {
-        const orderDetailsContent = document.getElementById('orderDetailsContent');
-        orderDetailsContent.innerHTML = `
-            <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i> Loading order details...
-            </div>
-        `;
-        
-        document.getElementById('viewModal').style.display = 'flex';
-        
-        try {
-            const response = await fetch(`/get-order-details/${orderId}/`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                throw new Error("Response wasn't JSON");
-            }
-
-            const data = await response.json();
-            
-            const orderDate = new Date(data.order.created_at);
-            const formattedDate = orderDate.toLocaleString();
-            
-            let itemsTable = '';
-            if (data.order_items && data.order_items.length > 0) {
-                itemsTable = `
-                    <h4 style="margin: 20px 0 10px; color: #4361ee;">Items</h4>
-                    <div style="width: 100%; overflow: auto;">
-                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                            <thead>
-                                <tr style="background-color: #f8f9fa;">
-                                    <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Item</th>
-                                    <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Price</th>
-                                    <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Qty</th>
-                                    <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${data.order_items.map(item => `
-                                    <tr>
-                                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.product.name}</td>
-                                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.product.selling_price}</td>
-                                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${item.quantity}</td>
-                                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.get_total_product_price}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            }
-            
-            // Add cancellation report if order is canceled
-            let cancellationInfo = '';
-            if (data.order.is_canceled && data.order.cancellation_report) {
-                cancellationInfo = `
-                    <div style="margin-top: 20px; padding: 15px; background-color: #fff8f8; border-radius: 5px; border-left: 4px solid #ff6b6b;">
-                        <h4 style="margin-bottom: 10px; color: #ff6b6b;">Cancellation Details</h4>
-                        <div style="margin-bottom: 8px;">
-                            <strong>Reason:</strong> ${data.order.cancellation_report.reason || 'Not specified'}
+                orderDetailsContent.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-weight: bold;">Order ID:</span>
+                            <span>${data.order.order_id}</span>
                         </div>
-                        <div>
-                            <strong>Notes:</strong> ${data.order.cancellation_report.notes || 'None'}
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-weight: bold;">Date:</span>
+                            <span>${formattedDate}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                            <span style="font-weight: bold;">Status:</span>
+                            <span style="background-color: #e6f7ff; color: #1890ff; padding: 3px 8px; border-radius: 4px;">
+                                ${data.order.status}
+                            </span>
+                        </div>
+                    </div>
+                    ${itemsTable}
+                    <div style="border-top: 1px solid #eee; padding-top: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Subtotal:</span>
+                            <span>$${data.order.total_price}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1em; margin-top: 10px;">
+                            <span>Total:</span>
+                            <span>$${data.order.total_price}</span>
                         </div>
                     </div>
                 `;
+            } catch (error) {
+                console.error('Error loading order details:', error);
+                orderDetailsContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        Error loading order details: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function deleteOrder() {
+            const orderId = document.getElementById('deleteOrderId').value;
+            try {
+                const response = await fetch(`/delete-order/${orderId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('success', 'Order deleted successfully');
+                    closeModal('deleteModal');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showAlert('danger', data.message || 'Failed to delete order');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('danger', 'An error occurred while deleting the order');
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function printOrder() {
+            const printContent = document.getElementById('orderDetailsContent').innerHTML;
+            const originalContent = document.body.innerHTML;
+            
+            document.body.innerHTML = `
+                <div style="padding: 20px; font-family: Arial, sans-serif;">
+                    <h2 style="text-align: center; margin-bottom: 20px;">Order Receipt</h2>
+                    ${printContent}
+                </div>
+            `;
+            
+            window.print();
+            document.body.innerHTML = originalContent;
+            document.getElementById('viewModal').style.display = 'flex';
+        }
+
+        function showAlert(type, message) {
+            const existingAlert = document.querySelector('.alert');
+            if (existingAlert) {
+                existingAlert.remove();
             }
             
-            orderDetailsContent.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-weight: bold;">Order ID:</span>
-                        <span>${data.order.order_id}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-weight: bold;">Date:</span>
-                        <span>${formattedDate}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                        <span style="font-weight: bold;">Status:</span>
-                        <span style="background-color: ${data.order.is_canceled ? '#ffebee' : '#e6f7ff'}; 
-                              color: ${data.order.is_canceled ? '#f44336' : '#1890ff'}; 
-                              padding: 3px 8px; border-radius: 4px;">
-                            ${data.order.status}
-                        </span>
-                    </div>
-                </div>
-                ${itemsTable}
-                <div style="border-top: 1px solid #eee; padding-top: 15px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span>Subtotal:</span>
-                        <span>$${data.order.total_price}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1em; margin-top: 10px;">
-                        <span>Total:</span>
-                        <span>$${data.order.total_price}</span>
-                    </div>
-                </div>
-                ${cancellationInfo}
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
+                ${message}
+                <button class="close">&times;</button>
             `;
-        } catch (error) {
-            console.error('Error loading order details:', error);
-            orderDetailsContent.innerHTML = `
-                <div class="alert alert-danger">
-                    Error loading order details: ${error.message}
-                </div>
-            `;
-        }
-    }
-
-    async function deleteOrder() {
-        const orderId = document.getElementById('deleteOrderId').value;
-        try {
-            const response = await fetch(`/delete-order/${orderId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
-                }
+            
+            document.body.appendChild(alert);
+            
+            alert.querySelector('.close').addEventListener('click', () => {
+                alert.remove();
             });
             
-            const data = await response.json();
+            setTimeout(() => {
+                alert.style.animation = 'fadeOut 0.3s ease forwards';
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
+        }
+
+        function showLoadingOverlay(message = '') {
+            const overlay = document.getElementById('loadingOverlay');
+            const content = overlay.querySelector('.loading-content p');
             
-            if (data.success) {
-                showAlert('success', 'Order deleted successfully');
-                closeModal('deleteModal');
-                loadRecentOrders();
-            } else {
-                showAlert('danger', data.message || 'Failed to delete order');
+            if (message) {
+                content.textContent = message;
             }
-        } catch (error) {
-            console.error('Error:', error);
-            showAlert('danger', 'An error occurred while deleting the order');
+            
+            overlay.style.display = 'flex';
         }
-    }
 
-    function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-    }
-
-    function printOrder() {
-        const printContent = document.getElementById('orderDetailsContent').innerHTML;
-        const originalContent = document.body.innerHTML;
-        
-        document.body.innerHTML = `
-            <div style="padding: 20px; font-family: Arial, sans-serif;">
-                <h2 style="text-align: center; margin-bottom: 20px;">Order Receipt</h2>
-                ${printContent}
-            </div>
-        `;
-        
-        window.print();
-        document.body.innerHTML = originalContent;
-        document.getElementById('viewModal').style.display = 'flex';
-    }
-
-    function showAlert(type, message) {
-        const existingAlert = document.querySelector('.alert');
-        if (existingAlert) {
-            existingAlert.remove();
+        function hideLoadingOverlay() {
+            document.getElementById('loadingOverlay').style.display = 'none';
         }
-        
-        const alert = document.createElement('div');
-        alert.className = `alert alert-${type}`;
-        alert.innerHTML = `
-            ${message}
-            <button class="close">&times;</button>
-        `;
-        
-        document.body.appendChild(alert);
-        
-        alert.querySelector('.close').addEventListener('click', () => {
-            alert.remove();
+
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            loadActiveOrder();
+            loadRecentOrders();
+            
+            const cancelForm = document.getElementById('cancelOrderForm');
+            if (cancelForm) {
+                cancelForm.addEventListener('submit', handleCancelSubmit);
+            }
+            
+            function handleResize() {
+                const isMobile = window.innerWidth < 768;
+                sidebar.classList.toggle('active', !isMobile);
+            }
+            
+            window.addEventListener('resize', handleResize);
+            handleResize();
         });
-        
-        setTimeout(() => {
-            alert.style.animation = 'fadeOut 0.3s ease forwards';
-            setTimeout(() => alert.remove(), 300);
-        }, 5000);
-    }
-
-    function showLoadingOverlay(message = '') {
-        const overlay = document.getElementById('loadingOverlay');
-        const content = overlay.querySelector('.loading-content p');
-        
-        if (message) {
-            content.textContent = message;
-        }
-        
-        overlay.style.display = 'flex';
-    }
-
-    function hideLoadingOverlay() {
-        document.getElementById('loadingOverlay').style.display = 'none';
-    }
-
-    // Initialize event listeners
-    document.addEventListener('DOMContentLoaded', function() {
-        loadActiveOrder();
-        loadRecentOrders();
-        
-        const cancelForm = document.getElementById('cancelOrderForm');
-        if (cancelForm) {
-            cancelForm.addEventListener('submit', handleCancelSubmit);
-        }
-        
-        function handleResize() {
-            const isMobile = window.innerWidth < 768;
-            sidebar.classList.toggle('active', !isMobile);
-        }
-        
-        window.addEventListener('resize', handleResize);
-        handleResize();
-    });
-</script>
+    </script>
 
     <style>
-        /* Add these styles to your CSS */
         .loading-overlay {
             position: fixed;
             top: 0;

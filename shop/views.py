@@ -25,6 +25,7 @@ import json
 
 def home(request):
     today = timezone.localdate()
+    cancel_form = CancelOrderForm()
 
     start_datetime = datetime.combine(today, time.min).replace(
         tzinfo=timezone.get_current_timezone()
@@ -88,6 +89,7 @@ def home(request):
 
     context = {
         "products": products,
+        'cancel_form':cancel_form,
         "categories": categories,
         "order_items": order_items,
         "orders": orders,
@@ -386,43 +388,53 @@ def filter_orders(request):
         }
     )
 
-
 def cancel_order(request, order_id):
-    try:
-        print(f"All order IDs in DB: {list(Order.objects.values_list('id', flat=True))}")  # Debug
-        order = Order.objects.get(id=order_id)
-        
-        if order.status != "pending":
-            return JsonResponse(
-                {"success": False, "error": "Only pending orders can be canceled"},
-                status=400
-            )
-
-        reason = request.POST.get('reason', '')
-        notes = request.POST.get('notes', '')
- 
-        report = Report.objects.create(
-            order=order,
-            context=f"Order canceled - Reason: {reason}",
-            dec=notes
-        )
-        
-        order.status = "canceled"
-        order.is_canceled = True
-        order.save()
-
-        return JsonResponse({
-            "success": True,
-            "order_id": order.order_id  
-        })
+    order = get_object_or_404(Order, id=order_id)
     
-    except Order.DoesNotExist:
-        return JsonResponse({
-            "success": False, 
-            "error": f"Order with ID {order_id} not found. Available IDs: {list(Order.objects.values_list('id', flat=True))}"
-        }, status=404)
-    except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
+    if request.method == 'POST':
+     
+        reason_id = request.POST.get('reason')
+        notes = request.POST.get('notes', '')
+
+        print(reason_id, notes)
+        
+        try:
+           
+            reason = CancelOrder.objects.get(id=reason_id)
+       
+            order.status = "canceled"
+            order.is_canceled = True
+            order.cancel_reason = reason
+            order.cancel_notes = notes
+            order.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Order canceled successfully'
+                })
+            else:
+                messages.success(request, 'Order canceled successfully')
+                return redirect('home')
+                
+        except CancelOrder.DoesNotExist:
+            error_msg = 'Invalid cancellation reason'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': error_msg
+                }, status=400)
+            else:
+                messages.error(request, error_msg)
+                return redirect('home')
+    
+    cancel_form = CancelOrderForm()
+    return render(request, 'main/home.html', {
+        'cancel_form': cancel_form,
+        'orders': Order.objects.all()  
+    })
+            
+        
 
 
 def delete_order(request, order_id):

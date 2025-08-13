@@ -5,6 +5,7 @@ from shop.models.products import Product, Category
 from shop.models.workers import Worker
 from shop.models.reports import Report
 from shop.models.cancel_order import CancelOrder
+from shop.models.activate_accounts import ActivateAccount
 # Register your models here.
 
 class OrderAdmin(admin.ModelAdmin):
@@ -18,6 +19,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = ['name', 'description', 'price', 'status']
 
 
+admin.site.register(ActivateAccount)
 admin.site.register(Order)
 admin.site.register(OrderItem)
 admin.site.register(Product)

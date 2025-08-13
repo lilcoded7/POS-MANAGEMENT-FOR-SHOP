@@ -224,7 +224,9 @@
                     <th>Stock</th>
                     <th>Status</th>
                     <th>Price</th>
+                    {% if request.user.is_admin %}
                     <th>Actions</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -265,6 +267,7 @@
                         <small class="text-muted">(${{ product.actual_price }})</small>
                         {% endif %}
                     </td>
+                    {% if request.user.is_admin %}
                     <td class="product-actions">
                         <button class="btn-action edit-product" data-id="{{ product.id }}">
                             <i class="fas fa-edit"></i>
@@ -274,6 +277,7 @@
                         </button>
                      
                     </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

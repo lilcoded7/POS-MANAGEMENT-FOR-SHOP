@@ -243,7 +243,6 @@
             });
         }
 
-        // Search functionality
         document.querySelector('.search-box input').addEventListener('input', function() {
             const term = this.value.toLowerCase();
             document.querySelectorAll('.product-card').forEach(card => {
@@ -252,7 +251,6 @@
             });
         });
 
-        // Product click handler
         document.querySelectorAll('.product-card').forEach(card => {
             card.addEventListener('click', function() {
                 const productId = this.getAttribute('data-id');

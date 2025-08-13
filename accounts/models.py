@@ -39,6 +39,7 @@ class User(AbstractBaseUser):
     phone = models.CharField(max_length=20, null=True, blank=True)
     code = models.CharField(max_length=100, null=True, blank=True)
     
+    has_activated = models.BooleanField(default=False)
     
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(verbose_name="date joined", auto_now_add=True)

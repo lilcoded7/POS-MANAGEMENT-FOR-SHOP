@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
 from shop.models.products import Product, Category
 from django.db.models.functions import Coalesce
 from django.db.models import DecimalField
@@ -14,7 +15,7 @@ from django.contrib import messages
 from datetime import datetime, time, timedelta
 from django.utils import timezone
 from shop.models.workers import Worker
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, logout
 from django.db.models import Q
 
 User = get_user_model()
@@ -24,7 +25,18 @@ import json
 # Create your views here.
 
 
+def has_activated_account(request):
+    if request.user.has_activated==False:
+        messages.error(request, 'Contact Support to activate your Account')
+        logout(request)
+        return redirect('login_view')
+
+@login_required
 def home(request):
+    try:
+        has_activated_account(request)
+    except:
+        pass
     today = timezone.localdate()
     cancel_form = CancelOrderForm()
 
@@ -138,7 +150,6 @@ def get_order_details(request, order_id):
         return JsonResponse({"success": False, "error": "Order not found"}, status=404)
 
 
-@csrf_exempt
 def add_to_order(request, product_id):
     try:
         product = Product.objects.get(id=product_id)
@@ -162,7 +173,6 @@ def add_to_order(request, product_id):
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 
-@csrf_exempt
 def update_order_item(request, item_id):
     try:
         data = json.loads(request.body)
@@ -183,7 +193,6 @@ def update_order_item(request, item_id):
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 
-@csrf_exempt
 def complete_order(request):
     try:
 
@@ -195,6 +204,12 @@ def complete_order(request):
         order.status = "success"
         order.total_price = order.get_total_price()
         order.save()
+        Report.objects.create(
+            user=request.user, 
+            order=order, 
+            context=f'order with the ID: {order.order_id} Completed Successfully',
+            dec=f'order with the ID: {order.order_id} Completed Successfully'
+        )
 
         return JsonResponse({"success": True})
     except Exception as e:
@@ -247,8 +262,12 @@ def get_order_items_data(order):
 
 
 
-
+@login_required
 def products(request):
+    try:
+        has_activated_account(request)
+    except:
+        pass
     product_form = ProductForm()
     category_form = CategoryForm()
     products = Product.objects.select_related("category").all()
@@ -307,6 +326,10 @@ def product_detail(request, product_id):
 
 
 def reports(request):
+    try:
+        has_activated_account(request)
+    except:
+        pass
     reports = Report.objects.all()
     context = {"reports": reports}
     return render(request, "main/reports.html", context)
@@ -314,12 +337,21 @@ def reports(request):
 
 def delete_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
+    Report.objects.create(
+        user=request.user, 
+        context=f'Product: {product.name} Completed Successfully',
+        dec=f'Product: {product.name} Completed Successfully'
+    )
     product.delete()
     messages.success(request, "Product deleted successfully")
     return redirect("products")
 
 
 def orders(request):
+    try:
+        has_activated_account(request)
+    except:
+        pass
     return render(request, "main/orders.html")
 
 
@@ -389,15 +421,18 @@ def filter_orders(request):
         }
     )
 
+@login_required
 def cancel_order(request, order_id):
+    try:
+        has_activated_account(request)
+    except:
+        pass
     order = get_object_or_404(Order, id=order_id)
     
     if request.method == 'POST':
      
         reason_id = request.POST.get('reason')
         notes = request.POST.get('notes', '')
-
-        print(reason_id, notes)
         
         try:
            
@@ -405,9 +440,14 @@ def cancel_order(request, order_id):
        
             order.status = "canceled"
             order.is_canceled = True
-            order.cancel_reason = reason
-            order.cancel_notes = notes
             order.save()
+
+            Report.objects.create(
+                user=request.user, 
+                order=order,
+                context=f'Order with the ID: {order.order_id} Canceled Reason: {reason}',
+                dec=notes
+            )
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
@@ -435,8 +475,6 @@ def cancel_order(request, order_id):
         'orders': Order.objects.all()  
     })
             
-        
-
 
 def delete_order(request, order_id):
     try:
@@ -448,6 +486,10 @@ def delete_order(request, order_id):
 
 
 def reports(request):
+    try:
+        has_activated_account(request)
+    except:
+        pass
     return render(
         request,
         "main/reports.html",
@@ -553,8 +595,12 @@ def delete_report(request, report_id):
         return JsonResponse({"success": False, "error": "Report not found"}, status=404)
 
 
-
+@login_required
 def product_inventory(request):
+    try:
+        has_activated_account(request)
+    except:
+        pass
     products = Product.objects.all().order_by("-created_at")
     categories = Category.objects.all()
     
@@ -568,6 +614,11 @@ def product_inventory(request):
                 product = get_object_or_404(Product, id=product_id)
                 product_form = ProductForm(request.POST, request.FILES, instance=product)
                 product_form.save()
+                Report.objects.create(
+                user=request.user, 
+                context=f'Product: {product.name} Created Successfully',
+                dec=f'Product: {product.name} Created Successfully'
+                )
                 messages.success(request, "Product updated successfully!")
             else:
               
@@ -611,12 +662,21 @@ def product_detail(request, product_id):
 def delete_product(request, product_id):
     if request.method == 'POST':
         product = get_object_or_404(Product, id=product_id)
+        Report.objects.create(
+        user=request.user, 
+        context=f'Product: {product.name} Deleted Successfully',
+        dec=f'Product: {product.name} Deleted Successfully'
+        )
         product.delete()
         return JsonResponse({'success': True})
     return JsonResponse({'success': False}, status=400)
 
-
+@login_required
 def workers(request):
+    try:
+        has_activated_account(request)
+    except:
+        pass
     workers = Worker.objects.all()
     form = CreateWorkerForm() 
     return render(request, 'main/workers.html', {'workers': workers, 'form': form})
@@ -624,12 +684,21 @@ def workers(request):
 
 def delete_worker(request, worker_id):
     worker = get_object_or_404(Worker, id=worker_id)
+    Report.objects.create(
+    user=request.user, 
+    context=f'Product: {worker.name} Deleted Successfully',
+    dec=f'Product: {worker.name} Deleted Successfully'
+    )
     worker.user.delete()
     worker.delete()
     messages.success(request, 'worker deleted successfully ')
     return redirect('workers')
 
 def create_worker(request):
+    try:
+        has_activated_account(request)
+    except:
+        pass
     if request.method == 'POST':
         form = CreateWorkerForm(request.POST, request.FILES)
         if form.is_valid():
@@ -654,6 +723,12 @@ def create_worker(request):
             worker = form.save(commit=False)
             worker.user = user
             worker.save()
+
+            Report.objects.create(
+            user=request.user, 
+            context=f'Worker: {worker.name} Created Successfully',
+            dec=f'Product: {worker.name} Created Successfully'
+            )
 
             messages.success(request, f"Worker '{name}' created successfully with username '{username}', email '{email}', and default password '0000'.")
             return redirect('workers')

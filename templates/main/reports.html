@@ -38,6 +38,7 @@
             <thead>
                 <tr>
                     <th>Report ID</th>
+                    <th>User</th>
                     <th>Date</th>
                     <th>Context</th>
                     <th>Description</th>
@@ -49,6 +50,7 @@
                 {% for report in reports %}
                 <tr>
                     <td>{{ report.id }}</td>
+                    <td>{% if report.user %}{{ report.user.username }}{% else %}N/A{% endif %}</td>
                     <td>{{ report.created_at|date:"Y-m-d H:i" }}</td>
                     <td>{{ report.context }}</td>
                     <td>{{ report.dec|default:"-" }}</td>
@@ -66,14 +68,17 @@
                             <a href="#" class="view-btn" onclick="viewReportDetails('{{ report.id }}')">
                                 <i class="fas fa-eye"></i> View
                             </a>
+                            {% if request.user.is_admin %}
                             <a href="#" class="delete-btn" onclick="confirmDeleteReport('{{ report.id }}')">
                                 <i class="fas fa-trash"></i> Delete
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
+
         </table>
     </div>
 

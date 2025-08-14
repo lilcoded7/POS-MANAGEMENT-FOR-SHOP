@@ -738,3 +738,13 @@ def create_worker(request):
             return render(request, 'main/workers.html', {'workers': workers, 'form': form})
 
     return redirect('workers')
+
+
+
+
+
+
+
+
+
+

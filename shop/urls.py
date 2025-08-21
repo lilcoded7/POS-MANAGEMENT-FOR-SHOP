@@ -30,7 +30,8 @@ urlpatterns = [
     path('<int:product_id>/delete/', delete_product, name='delete_product'),
     path('workers/', workers, name='workers'),
     path('delete_worker/<int:worker_id>', delete_worker, name='delete_worker'),
-    path('create_worker/', create_worker, name='create_worker')
+    path('create_worker/', create_worker, name='create_worker'),
+    path('api/get/activated/code', GetActivationCode.as_view(), name='get_activating_code')
 
 
 ]

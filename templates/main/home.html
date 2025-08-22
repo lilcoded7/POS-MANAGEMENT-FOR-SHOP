@@ -162,11 +162,11 @@
         </div>
     </div>
     
-    <!-- View Order Modal -->
+    <!-- Receipt Modal -->
     <div id="viewModal" class="modal">
-        <div class="modal-content" style="margin: auto;">
+        <div class="modal-content receipt-content">
             <div class="modal-header">
-                <h3>Order Details</h3>
+                <h3>Receipt</h3>
                 <button class="modal-close" onclick="closeModal('viewModal')">&times;</button>
             </div>
             <div id="orderDetailsContent">
@@ -309,7 +309,7 @@
             const customerPhone = document.getElementById('customerPhone').value.trim();
             
             if (!customerPhone) {
-                showAlert('danger', 'Please enter a phone number');
+                showAlert('danger', 'Please enter customer phone number');
                 return;
             }
             
@@ -366,7 +366,7 @@
                     itemElement.className = 'order-item';
                     itemElement.innerHTML = `
                         <div class="item-info">
-                            <h4>₵‎{item.product_name}</h4>
+                            <h4>${item.product_name}</h4>
                             <div class="price">₵‎${item.product_price.toFixed(2)}</div>
                         </div>
                         <div class="item-qty">
@@ -476,7 +476,7 @@
             const orderDetailsContent = document.getElementById('orderDetailsContent');
             orderDetailsContent.innerHTML = `
                 <div class="loading-spinner">
-                    <i class="fas fa-spinner fa-spin"></i> Loading order details...
+                    <i class="fas fa-spinner fa-spin"></i> Loading receipt...
                 </div>
             `;
             
@@ -492,22 +492,22 @@
                 let itemsTable = '';
                 if (data.order_items && data.order_items.length > 0) {
                     itemsTable = `
-                        <table class="order-items-table">
+                        <table class="receipt-items-table">
                             <thead>
                                 <tr>
-                                    <th>Item</th>
-                                    <th>Price</th>
-                                    <th>Qty</th>
-                                    <th>Total</th>
+                                    <th class="item-col">Item</th>
+                                    <th class="price-col">Price</th>
+                                    <th class="qty-col">Qty</th>
+                                    <th class="total-col">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${data.order_items.map(item => `
                                     <tr>
-                                        <td>${item.product.name}</td>
-                                        <td>₵‎${item.product.selling_price}</td>
-                                        <td>${item.quantity}</td>
-                                        <td>₵‎${item.get_total_product_price}</td>
+                                        <td class="item-col">${truncateText(item.product.name, 20)}</td>
+                                        <td class="price-col">₵‎${item.product.selling_price}</td>
+                                        <td class="qty-col">${item.quantity}</td>
+                                        <td class="total-col">₵‎${item.get_total_product_price}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -516,78 +516,82 @@
                 }
                 
                 orderDetailsContent.innerHTML = `
-                    <div class="order-details-header">
-                        <div class="order-logo">
+                    <div class="receipt-header">
+                        <div class="receipt-logo">
                             <i class="fas fa-store"></i>
                         </div>
-                        <div class="order-shop-name">Elite Shop</div>
-                        <div class="order-contact-info">
-                            <a href="#" class="social-link">
+                        <div class="receipt-shop-name">Elite Shop</div>
+                        <div class="receipt-contact-info">
+                            <div class="social-row">
                                 <i class="fab fa-instagram"></i> @eliteshop
-                            </a>
-                            <a href="tel:+233123456789" class="social-link">
+                            </div>
+                            <div class="social-row">
                                 <i class="fas fa-phone"></i> +233 123 456 789
-                            </a>
-                            <a href="#" class="social-link">
+                            </div>
+                            <div class="social-row">
                                 <i class="fab fa-facebook"></i> /eliteshop
-                            </a>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="order-detail-item">
-                        <span class="order-detail-label">Order ID:</span>
-                        <span class="order-detail-value">${data.order.order_id}</span>
-                    </div>
-                    
-                    <div class="order-detail-item">
-                        <span class="order-detail-label">Date:</span>
-                        <span class="order-detail-value">${formattedDate}</span>
-                    </div>
-                    
-                    <div class="order-detail-item">
-                        <span class="order-detail-label">Customer Phone:</span>
-                        <span class="order-detail-value phone">${data.order.customer.phone_number || 'Not provided'}</span>
-                    </div>
-                    
-                    <div class="order-detail-item">
-                        <span class="order-detail-label">Status:</span>
-                        <span class="order-detail-value" style="background-color: #e6f7ff; color: #1890ff; padding: 3px 8px; border-radius: 4px;">
-                            ${data.order.status}
-                        </span>
+                    <div class="receipt-details">
+                        <div class="receipt-detail-item">
+                            <span class="receipt-label">Order ID:</span>
+                            <span class="receipt-value">${data.order.order_id}</span>
+                        </div>
+                        
+                        <div class="receipt-detail-item">
+                            <span class="receipt-label">Date:</span>
+                            <span class="receipt-value">${formattedDate}</span>
+                        </div>
+                        
+                        <div class="receipt-detail-item">
+                            <span class="receipt-label">Customer Phone:</span>
+                            <span class="receipt-value phone">${data.order.phone_number || 'Not provided'}</span>
+                        </div>
+                        
+                        <div class="receipt-detail-item">
+                            <span class="receipt-label">Status:</span>
+                            <span class="receipt-status">${data.order.status}</span>
+                        </div>
                     </div>
                     
                     ${itemsTable}
                     
-                    <div class="order-total-section">
-                        <div class="order-total-row">
+                    <div class="receipt-total-section">
+                        <div class="receipt-total-row">
                             <span>Subtotal:</span>
                             <span>₵‎${data.order.total_price}</span>
                         </div>
-                        <div class="order-total-row">
+                        <div class="receipt-total-row">
                             <span>Tax (10%):</span>
                             <span>₵‎${(data.order.total_price * 0.1).toFixed(2)}</span>
                         </div>
-                        <div class="order-total-row order-grand-total">
+                        <div class="receipt-total-row receipt-grand-total">
                             <span>Total:</span>
                             <span>₵‎${(data.order.total_price * 1.1).toFixed(2)}</span>
                         </div>
                     </div>
                     
-                    <div class="thank-you-message" style="text-align: center; margin-top: 20px; padding: 15px; background: var(--primary-light); border-radius: 10px;">
-                        <p style="font-weight: 600; color: var(--primary); margin: 0;">Thank you for your purchase!</p>
+                    <div class="thank-you-message">
+                        <p>Thank you for your purchase!</p>
                     </div>
                 `;
             } catch (error) {
-                console.error('Error loading order details:', error);
+                console.error('Error loading receipt:', error);
                 orderDetailsContent.innerHTML = `
                     <div class="alert alert-danger">
-                        Error loading order details: ${error.message}
+                        Error loading receipt: ${error.message}
                     </div>
                 `;
             }
         }
 
-       
+        function truncateText(text, maxLength) {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength - 3) + '...';
+        }
+
         async function deleteOrder() {
             const orderId = document.getElementById('deleteOrderId').value;
             try {
@@ -622,8 +626,7 @@
             const originalContent = document.body.innerHTML;
             
             document.body.innerHTML = `
-                <div style="padding: 20px; font-family: Arial, sans-serif;">
-                    <h2 style="text-align: center; margin-bottom: 20px;">Order Receipt</h2>
+                <div class="receipt-print">
                     ${printContent}
                 </div>
             `;
@@ -765,6 +768,154 @@
             overflow-y: auto;
         }
         
+        .receipt-content {
+            width: 350px;
+            max-width: 90vw;
+            padding: 15px;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed #e2e8f0;
+        }
+        
+        .receipt-logo {
+            font-size: 28px;
+            color: #4361ee;
+            margin-bottom: 8px;
+        }
+        
+        .receipt-shop-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        
+        .receipt-contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+        
+        .social-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            color: #718096;
+        }
+        
+        .receipt-details {
+            margin: 12px 0;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        
+        .receipt-detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        
+        .receipt-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        .receipt-value {
+            color: #2d3748;
+        }
+        
+        .receipt-status {
+            background-color: #e6f7ff;
+            color: #1890ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .receipt-items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 12px;
+            table-layout: fixed;
+        }
+        
+        .receipt-items-table th {
+            background: #f7fafc;
+            padding: 6px;
+            text-align: left;
+            font-weight: 600;
+            color: #4a5568;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .receipt-items-table td {
+            padding: 6px;
+            border-bottom: 1px solid #e2e8f0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .item-col {
+            width: 40%;
+        }
+        
+        .price-col, .qty-col {
+            width: 15%;
+        }
+        
+        .total-col {
+            width: 30%;
+            text-align: right;
+        }
+        
+        .receipt-total-section {
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 2px dashed #e2e8f0;
+            font-size: 13px;
+        }
+        
+        .receipt-total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        
+        .receipt-grand-total {
+            font-weight: bold;
+            font-size: 14px;
+            color: #4361ee;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .thank-you-message {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: #ebf8ff;
+            border-radius: 6px;
+            color: #3182ce;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
         .checkout-btn .btn-text,
         .checkout-btn .btn-loading {
             display: inline-block;
@@ -810,6 +961,22 @@
         @keyframes fadeOut {
             from { opacity: 1; transform: translateY(0); }
             to { opacity: 0; transform: translateY(-20px); }
+        }
+        
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .receipt-print, .receipt-print * {
+                visibility: visible;
+            }
+            .receipt-print {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20px;
+            }
         }
     </style>
 {% endblock content %}

@@ -22,6 +22,7 @@ from shop.serializer import ActivateAccountSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from shop.models.activate_accounts import ActivateAccount
+from shop.models.customers import Customer
 
 
 User = get_user_model()
@@ -40,10 +41,7 @@ def has_activated_account(request):
 
 @login_required
 def home(request):
-    try:
-        has_activated_account(request)
-    except:
-        pass
+    
     today = timezone.localdate()
     cancel_form = CancelOrderForm()
 
@@ -59,6 +57,7 @@ def home(request):
         is_canceled=False,
         created_at__range=(start_datetime, end_datetime),
     )
+    print(today_orders)
     canceled_order = Order.objects.filter(
         is_canceled=True, created_at__range=(start_datetime, end_datetime)
     ).count()
@@ -112,6 +111,7 @@ def home(request):
         "cancel_form": cancel_form,
         "categories": categories,
         "order_items": order_items,
+        "today_orders":today_orders,
         "orders": orders,
         "reasons": reasons,
         "form": form,
@@ -202,8 +202,14 @@ def update_order_item(request, item_id):
 
 def complete_order(request):
     try:
+        data = json.loads(request.body)
+        phone_number = data.get('phone_number', '')
+        customer = Customer.objects.create(
+            phone_number=phone_number
+        )
 
         order = Order.objects.filter(status="pending").first()
+         
 
         if not order or not order.items.exists():
             raise Exception("No active order to complete")
@@ -217,7 +223,8 @@ def complete_order(request):
             context=f"order with the ID: {order.order_id} Completed Successfully",
             dec=f"order with the ID: {order.order_id} Completed Successfully",
         )
-
+        order.customer=customer
+        order.save()
         return JsonResponse({"success": True})
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=400)

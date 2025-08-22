@@ -6,7 +6,7 @@
     <div class="analytics-cards">
         <div class="card">
             <h3>Today's Sales</h3>
-            <div class="value">${{total_sales}}</div>
+            <div class="value">₵‎{{total_sales}}</div>
             <div class="progress">
                 <div class="progress-bar" style="width: 75%"></div>
             </div>
@@ -22,7 +22,7 @@
         </div>
         <div class="card">
             <h3>Average Order Value</h3>
-            <div class="value">${{average_order_value}}</div>
+            <div class="value">₵‎{{average_order_value}}</div>
             <div class="progress">
                 <div class="progress-bar" style="width: 45%"></div>
             </div>
@@ -53,11 +53,11 @@
                 </tr>
             </thead>
             <tbody>
-                {% for order in orders|slice:':8' %}
+                {% for order in today_orders %}
                 <tr>
                     <td>#{{order.order_id}}</td>
                     <td>{{order.get_order_quantity}}</td>
-                    <td>${{order.get_total_price}}</td>
+                    <td>₵‎{{order.get_total_price}}</td>
                     <td><span class="status completed">{{order.status}}</span></td>
                     <td>{{order.created_at}}</td>
                     <td>
@@ -103,7 +103,7 @@
                     <img src="https://st4.depositphotos.com/13324256/24475/i/450/depositphotos_244751462-stock-photo-top-view-product-lettering-made.jpg" alt="{{ product.name }}">
                     <h4>{{ product.name }}</h4>
                     <div class="price" style="color: #92f79c;">{{ product.status }}</div>
-                    <div class="price">${{ product.selling_price }}</div>
+                    <div class="price">₵‎{{ product.selling_price }}</div>
                     <div class="price" style="color: #4ba8f9;">Stock Qty: {{ product.stock_quantity }}</div>
                 </div>
                 {% endfor %}
@@ -112,11 +112,13 @@
         
         <div class="order-summary">
             <h3>Order Summary</h3>
+            <div class="phone-input-container">
+                <i class="fas fa-phone"></i>
+                <input id="customerPhone" type="tel" placeholder="Enter phone number..." pattern="[0-9]{10}" required>
+            </div>
             <div class="order-items">
-                <!-- Order items will be populated by JavaScript -->
             </div>
             <div class="order-total">
-                <!-- Order totals will be populated by JavaScript -->
             </div>
             <button class="checkout-btn" onclick="completeOrder()" disabled>
                 <span class="btn-text">Complete Order</span>
@@ -168,7 +170,6 @@
                 <button class="modal-close" onclick="closeModal('viewModal')">&times;</button>
             </div>
             <div id="orderDetailsContent">
-                <!-- Content will be loaded dynamically -->
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('viewModal')">Close</button>
@@ -206,7 +207,6 @@
     </div>
     
     <script>
-        // Toggle sidebar
         const menuToggle = document.querySelector('.menu-toggle');
         const sidebar = document.querySelector('.sidebar');
         const sidebarOverlay = document.querySelector('.sidebar-overlay');
@@ -221,7 +221,6 @@
             sidebarOverlay.classList.remove('active');
         });
 
-        // Category filtering
         document.querySelectorAll('.category-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
@@ -261,7 +260,6 @@
             });
         });
 
-        // Order management functions
         async function addToOrder(productId) {
             try {
                 const response = await fetch(`/add-to-order/${productId}/`, {
@@ -308,6 +306,12 @@
             const checkoutBtn = document.querySelector('.checkout-btn');
             const btnText = checkoutBtn.querySelector('.btn-text');
             const btnLoading = checkoutBtn.querySelector('.btn-loading');
+            const customerPhone = document.getElementById('customerPhone').value.trim();
+            
+            if (!customerPhone) {
+                showAlert('danger', 'Please enter a phone number');
+                return;
+            }
             
             btnText.style.display = 'none';
             btnLoading.style.display = 'inline-block';
@@ -319,7 +323,10 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': '{{ csrf_token }}'
-                    }
+                    },
+                    body: JSON.stringify({
+                        phone_number: customerPhone
+                    })
                 });
                 
                 if (!response.ok) throw new Error('Failed to complete order');
@@ -359,8 +366,8 @@
                     itemElement.className = 'order-item';
                     itemElement.innerHTML = `
                         <div class="item-info">
-                            <h4>${item.product_name}</h4>
-                            <div class="price">$${item.product_price.toFixed(2)}</div>
+                            <h4>₵‎{item.product_name}</h4>
+                            <div class="price">₵‎${item.product_price.toFixed(2)}</div>
                         </div>
                         <div class="item-qty">
                             <button onclick="updateQuantity(${item.id}, -1)">-</button>
@@ -370,7 +377,7 @@
                     `;
                     orderItemsContainer.appendChild(itemElement);
                 });
-                
+                 
                 checkoutBtn.disabled = false;
             }
             
@@ -381,15 +388,15 @@
             orderTotalContainer.innerHTML = `
                 <div>
                     <span>Subtotal</span>
-                    <span>$${subtotal.toFixed(2)}</span>
+                    <span>₵‎${subtotal.toFixed(2)}</span>
                 </div>
                 <div>
                     <span>Tax (10%)</span>
-                    <span>$${tax.toFixed(2)}</span>
+                    <span>₵‎${tax.toFixed(2)}</span>
                 </div>
                 <div class="grand-total">
                     <span>Total</span>
-                    <span>$${total.toFixed(2)}</span>
+                    <span>₵‎${total.toFixed(2)}</span>
                 </div>
             `;
         }
@@ -420,7 +427,6 @@
             }
         }
 
-        // Modal functions
         function showCancelForm(orderId) {
             const modal = document.getElementById('cancelModal');
             document.getElementById('cancelOrderId').value = orderId;
@@ -486,59 +492,89 @@
                 let itemsTable = '';
                 if (data.order_items && data.order_items.length > 0) {
                     itemsTable = `
-                        <h4 style="margin: 20px 0 10px; color: #4361ee;">Items</h4>
-                        <div style="width: 100%; overflow: auto;">
-                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                                <thead>
-                                    <tr style="background-color: #f8f9fa;">
-                                        <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Item</th>
-                                        <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Price</th>
-                                        <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Qty</th>
-                                        <th style="text-align: right; padding: 10px; border-bottom: 1px solid #ddd;">Total</th>
+                        <table class="order-items-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Price</th>
+                                    <th>Qty</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.order_items.map(item => `
+                                    <tr>
+                                        <td>${item.product.name}</td>
+                                        <td>₵‎${item.product.selling_price}</td>
+                                        <td>${item.quantity}</td>
+                                        <td>₵‎${item.get_total_product_price}</td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    ${data.order_items.map(item => `
-                                        <tr>
-                                            <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.product.name}</td>
-                                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.product.selling_price}</td>
-                                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${item.quantity}</td>
-                                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.get_total_product_price}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
+                                `).join('')}
+                            </tbody>
+                        </table>
                     `;
                 }
                 
                 orderDetailsContent.innerHTML = `
-                    <div style="margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span style="font-weight: bold;">Order ID:</span>
-                            <span>${data.order.order_id}</span>
+                    <div class="order-details-header">
+                        <div class="order-logo">
+                            <i class="fas fa-store"></i>
                         </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span style="font-weight: bold;">Date:</span>
-                            <span>${formattedDate}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                            <span style="font-weight: bold;">Status:</span>
-                            <span style="background-color: #e6f7ff; color: #1890ff; padding: 3px 8px; border-radius: 4px;">
-                                ${data.order.status}
-                            </span>
+                        <div class="order-shop-name">Elite Shop</div>
+                        <div class="order-contact-info">
+                            <a href="#" class="social-link">
+                                <i class="fab fa-instagram"></i> @eliteshop
+                            </a>
+                            <a href="tel:+233123456789" class="social-link">
+                                <i class="fas fa-phone"></i> +233 123 456 789
+                            </a>
+                            <a href="#" class="social-link">
+                                <i class="fab fa-facebook"></i> /eliteshop
+                            </a>
                         </div>
                     </div>
+                    
+                    <div class="order-detail-item">
+                        <span class="order-detail-label">Order ID:</span>
+                        <span class="order-detail-value">${data.order.order_id}</span>
+                    </div>
+                    
+                    <div class="order-detail-item">
+                        <span class="order-detail-label">Date:</span>
+                        <span class="order-detail-value">${formattedDate}</span>
+                    </div>
+                    
+                    <div class="order-detail-item">
+                        <span class="order-detail-label">Customer Phone:</span>
+                        <span class="order-detail-value phone">${data.order.customer.phone_number || 'Not provided'}</span>
+                    </div>
+                    
+                    <div class="order-detail-item">
+                        <span class="order-detail-label">Status:</span>
+                        <span class="order-detail-value" style="background-color: #e6f7ff; color: #1890ff; padding: 3px 8px; border-radius: 4px;">
+                            ${data.order.status}
+                        </span>
+                    </div>
+                    
                     ${itemsTable}
-                    <div style="border-top: 1px solid #eee; padding-top: 15px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    
+                    <div class="order-total-section">
+                        <div class="order-total-row">
                             <span>Subtotal:</span>
-                            <span>$${data.order.total_price}</span>
+                            <span>₵‎${data.order.total_price}</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1em; margin-top: 10px;">
+                        <div class="order-total-row">
+                            <span>Tax (10%):</span>
+                            <span>₵‎${(data.order.total_price * 0.1).toFixed(2)}</span>
+                        </div>
+                        <div class="order-total-row order-grand-total">
                             <span>Total:</span>
-                            <span>$${data.order.total_price}</span>
+                            <span>₵‎${(data.order.total_price * 1.1).toFixed(2)}</span>
                         </div>
+                    </div>
+                    
+                    <div class="thank-you-message" style="text-align: center; margin-top: 20px; padding: 15px; background: var(--primary-light); border-radius: 10px;">
+                        <p style="font-weight: 600; color: var(--primary); margin: 0;">Thank you for your purchase!</p>
                     </div>
                 `;
             } catch (error) {
@@ -551,6 +587,7 @@
             }
         }
 
+       
         async function deleteOrder() {
             const orderId = document.getElementById('deleteOrderId').value;
             try {
@@ -636,7 +673,6 @@
             document.getElementById('loadingOverlay').style.display = 'none';
         }
 
-        // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
             loadActiveOrder();
             loadRecentOrders();
@@ -657,6 +693,42 @@
     </script>
 
     <style>
+        .phone-input-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        .phone-input-container i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 16px;
+        }
+        
+        .phone-input-container input {
+            width: 100%;
+            padding: 12px 15px 12px 40px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background-color: #f8fafc;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .phone-input-container input:focus {
+            outline: none;
+            border-color: #4361ee;
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+        }
+        
+        .phone-input-container input::placeholder {
+            color: #a0aec0;
+        }
+        
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -696,6 +768,48 @@
         .checkout-btn .btn-text,
         .checkout-btn .btn-loading {
             display: inline-block;
+        }
+        
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+            max-width: 350px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .alert-success {
+            background-color: #10b981;
+        }
+        
+        .alert-danger {
+            background-color: #ef4444;
+        }
+        
+        .alert .close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            cursor: pointer;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-20px); }
         }
     </style>
 {% endblock content %}

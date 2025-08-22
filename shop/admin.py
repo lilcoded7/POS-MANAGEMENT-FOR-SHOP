@@ -6,17 +6,21 @@ from shop.models.workers import Worker
 from shop.models.reports import Report
 from shop.models.cancel_order import CancelOrder
 from shop.models.activate_accounts import ActivateAccount
+from shop.models.customers import Customer
+
 # Register your models here.
 
+
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['status', 'total_price']
+    list_display = ["status", "total_price"]
 
 
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ['order', 'product', 'quantity', 'price']
+    list_display = ["order", "product", "quantity", "price"]
+
 
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'description', 'price', 'status']
+    list_display = ["name", "description", "price", "status"]
 
 
 admin.site.register(ActivateAccount)
@@ -26,4 +30,5 @@ admin.site.register(Product)
 admin.site.register(Category)
 admin.site.register(Worker)
 admin.site.register(Report)
+admin.site.register(Customer)
 admin.site.register(CancelOrder)

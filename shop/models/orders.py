@@ -2,6 +2,8 @@ from django.db import models
 from setup.basemodel import BaseModel
 from django.db.models import Max
 from decimal import Decimal
+from shop.models.customers import Customer
+
 
 class Order(BaseModel):
     status_choices = [
@@ -9,6 +11,9 @@ class Order(BaseModel):
         ("success", "success"),
         ("wish_list", "Wish List"),
     ]
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, null=True, blank=True
+    )
     status = models.CharField(max_length=20, choices=status_choices, default="pending")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     order_id = models.CharField(max_length=100, null=True, blank=True)
@@ -26,7 +31,7 @@ class Order(BaseModel):
     def get_total_price(self):
         total_order_price = sum(
             (item.get_total_product_price() for item in self.items.all()),
-            Decimal('0.00')  
+            Decimal("0.00"),
         )
         return total_order_price
 

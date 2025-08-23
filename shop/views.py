@@ -18,24 +18,34 @@ from shop.models.workers import Worker
 from django.contrib.auth import get_user_model, logout
 from django.db.models import Q
 from shop.serializer import ActivateAccountSerializer
-
+from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from shop.models.activate_accounts import ActivateAccount
 from shop.models.customers import Customer
+from shop.models.activate_accounts import POS
+
+from rest_framework.permissions import AllowAny
+from shop.utils import *
 
 User = get_user_model()
 
+
+load_pos = POS()
 import json
 
 def has_activated_account(request):
-    if request.user.has_activated == False:
-        messages.error(request, "Contact Support to activate your Account")
+    if not (load_pos.always_live and load_pos.is_live):
+        messages.error(request, "Contact Support to activate your account.")
         logout(request)
         return redirect("login_view")
+    
+
 
 @login_required
 def home(request):
+   
+
     today = timezone.localdate()
     cancel_form = CancelOrderForm()
 
@@ -114,7 +124,10 @@ def home(request):
     }
     return render(request, "main/home.html", context)
 
+
+
 def get_order_details(request, order_id):
+   
     try:
         order = Order.objects.get(id=order_id)
         order_items = OrderItem.objects.filter(order=order).select_related("product")
@@ -161,6 +174,7 @@ def get_order_details(request, order_id):
 
 @csrf_exempt
 def add_to_order(request, product_id):
+   
     try:
         product = Product.objects.get(id=product_id)
 
@@ -189,6 +203,7 @@ def add_to_order(request, product_id):
 
 @csrf_exempt
 def update_order_item(request, item_id):
+   
     try:
         data = json.loads(request.body)
         change = data.get("change", 0)
@@ -211,6 +226,7 @@ def update_order_item(request, item_id):
 
 @csrf_exempt
 def complete_order(request):
+   
     try:
         data = json.loads(request.body)
         phone_number = data.get('phone_number', '')
@@ -242,6 +258,7 @@ def complete_order(request):
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 def get_active_order(request):
+    
     try:
         order = Order.objects.filter(status="pending").first()
         if order:
@@ -253,6 +270,7 @@ def get_active_order(request):
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 def get_recent_orders(request):
+   
     try:
         orders = Order.objects.filter(status="success").order_by("-created_at")[:8]
         orders_data = [
@@ -272,6 +290,7 @@ def get_recent_orders(request):
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 def get_order_items_data(order):
+  
     return [
         {
             "id": item.id,
@@ -285,6 +304,7 @@ def get_order_items_data(order):
 
 @login_required
 def products(request):
+    
     
     product_form = ProductForm()
     category_form = CategoryForm()
@@ -329,6 +349,7 @@ def products(request):
 
 
 def product_detail(request, product_id):
+    
     try:
         product = Product.objects.select_related("category").get(id=product_id)
         data = {
@@ -348,6 +369,7 @@ def product_detail(request, product_id):
 @login_required
 def reports(request):
    
+   
     reports = Report.objects.all()
     context = {"reports": reports}
     return render(request, "main/reports.html", context)
@@ -366,9 +388,11 @@ def delete_product(request, product_id):
 @login_required
 def orders(request):
     
+    
     return render(request, "main/orders.html")
 
 def filter_orders(request):
+    
     time_filter = request.GET.get("time_filter", "today")
     status_filter = request.GET.get("status_filter", "all")
     custom_date = request.GET.get("custom_date", None)
@@ -435,6 +459,7 @@ def filter_orders(request):
 
 @login_required
 def cancel_order(request, order_id):
+    
    
     order = get_object_or_404(Order, id=order_id)
 
@@ -594,6 +619,7 @@ def delete_report(request, report_id):
 
 @login_required
 def product_inventory(request):
+   
     
     products = Product.objects.all().order_by("-created_at")
     categories = Category.objects.all()
@@ -669,6 +695,7 @@ def delete_product_api(request, product_id):
 @login_required
 def workers(request):
     
+    
     workers = Worker.objects.all()
     form = CreateWorkerForm()
     return render(request, "main/workers.html", {"workers": workers, "form": form})
@@ -686,6 +713,7 @@ def delete_worker(request, worker_id):
     return redirect("workers")
 
 def create_worker(request):
+   
     
     if request.method == "POST":
         form = CreateWorkerForm(request.POST, request.FILES)
@@ -727,22 +755,56 @@ def create_worker(request):
             )
 
     return redirect("workers")
-
-class GetActivationCode(APIView):
-    def get(self, request):
-        activation_code = ActivateAccount.objects.all()
-        code = ActivateAccountSerializer(activation_code, many=True).data
-        return Response({"data": code})
     
 
 
 def order_invoice(request, order_id):
+    try:
+        has_activated_account(request)
+    except:
+        pass 
     order = get_object_or_404(Order, id=order_id)
-    order_items = order.items.all()  # requires related_name="items" on OrderItem
-    print(order_items)  # debug, better use logging instead of print()
+    order_items = order.items.all() 
 
     context = {
         "order": order,
         "order_items": order_items,
     }
     return render(request, "main/invoice.html", context)
+
+from rest_framework.response import Response
+from rest_framework import status
+class ActivationAPIView(generics.GenericAPIView):
+    serializer_class = ActivateAccountSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            return Response({
+                'message': 'Activation code is valid',
+                'status': 'success'
+            }, status=status.HTTP_200_OK)
+        
+        return Response({
+            'message': 'Invalid activation code',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+
+def activate_account(request):
+    form = ActivationForm()
+
+    if request.method == 'POST':
+        form = ActivationForm(request.POST)
+        if form.is_valid():
+            code = form.cleaned_data['code'].replace('-', '')
+            result = verify_code(request, code)
+
+            if result.get("status") == "success":
+                messages.success(request, "Account activated successfully. you can now login your account")
+            else:
+                error = result.get("error", "Activation failed.")
+                messages.error(request, error)
+
+    return render(request, 'main/account.html', {'form': form})

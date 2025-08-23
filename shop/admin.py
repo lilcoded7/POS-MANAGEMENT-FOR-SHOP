@@ -5,7 +5,7 @@ from shop.models.products import Product, Category
 from shop.models.workers import Worker
 from shop.models.reports import Report
 from shop.models.cancel_order import CancelOrder
-from shop.models.activate_accounts import ActivateAccount
+from shop.models.activate_accounts import ActivateAccount, POS
 from shop.models.customers import Customer
 
 # Register your models here.
@@ -32,3 +32,4 @@ admin.site.register(Worker)
 admin.site.register(Report)
 admin.site.register(Customer)
 admin.site.register(CancelOrder)
+admin.site.register(POS)

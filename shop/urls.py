@@ -32,7 +32,8 @@ urlpatterns = [
     path('workers/', workers, name='workers'),
     path('delete_worker/<int:worker_id>', delete_worker, name='delete_worker'),
     path('create_worker/', create_worker, name='create_worker'),
-    path('api/get/activated/code', GetActivationCode.as_view(), name='get_activating_code')
+    path('api/get/activated/code', ActivationAPIView.as_view(), name='get_activating_code'),
+    path('activate/account/', activate_account, name='activate_account')
 
 
 ]

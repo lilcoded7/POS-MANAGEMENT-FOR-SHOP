@@ -11,7 +11,7 @@ class OrderItem(BaseModel):
     quantity = models.PositiveIntegerField(default=1)
 
     def __str__(self):
-        return f"{self.quantity} x {self.product.name}"
+        return f"{str(self.order.order_id)}"
 
     def get_total_product_price(self):
         if self.product and self.product.selling_price:

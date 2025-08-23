@@ -8,11 +8,12 @@ urlpatterns = [
     path(
         "update-order-item/<int:item_id>/", update_order_item, name="update_order_item"
     ),
+    path('order/invoice/<int:order_id>/', order_invoice, name='order_invoice'),
     path("complete-order/", complete_order, name="complete_order"),
     path("get-active-order/", get_active_order, name="get_active_order"),
     path("get-recent-orders/", get_recent_orders, name="get_recent_orders"),
     path('cancel-order/<int:order_id>/', cancel_order, name='cancel_order'),
-    path("products/<int:product_id>/detail/", product_detail, name="product_detail"),
+    path("products/<int:product_id>/detail/", product_detail_view, name="product_detail"),
     path("products/<int:product_id>/delete/", delete_product, name="delete_product"),
     path("products/", products, name="products"),
     path("reports/", reports, name="reports"),

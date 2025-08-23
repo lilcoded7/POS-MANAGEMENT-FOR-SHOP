@@ -24,13 +24,9 @@ from rest_framework.response import Response
 from shop.models.activate_accounts import ActivateAccount
 from shop.models.customers import Customer
 
-
 User = get_user_model()
 
 import json
-
-# Create your views here.
-
 
 def has_activated_account(request):
     if request.user.has_activated == False:
@@ -38,10 +34,8 @@ def has_activated_account(request):
         logout(request)
         return redirect("login_view")
 
-
 @login_required
 def home(request):
-    
     today = timezone.localdate()
     cancel_form = CancelOrderForm()
 
@@ -57,7 +51,7 @@ def home(request):
         is_canceled=False,
         created_at__range=(start_datetime, end_datetime),
     )
-    print(today_orders)
+    
     canceled_order = Order.objects.filter(
         is_canceled=True, created_at__range=(start_datetime, end_datetime)
     ).count()
@@ -85,7 +79,6 @@ def home(request):
             {
                 "name": product.name,
                 "selling_price": product.selling_price,
-                "stock_quantity": product.stock_quantity,
                 "status": product.status,
                 "category": product.category.name if product.category else "",
             }
@@ -103,7 +96,6 @@ def home(request):
 
     if request.method == "POST":
         product_name = request.POST["name"]
-
         products = Product.objects.filter(name__icontains=product_name)
 
     context = {
@@ -111,7 +103,7 @@ def home(request):
         "cancel_form": cancel_form,
         "categories": categories,
         "order_items": order_items,
-        "today_orders":today_orders,
+        "today_orders": today_orders,
         "orders": orders,
         "reasons": reasons,
         "form": form,
@@ -121,7 +113,6 @@ def home(request):
         "canceled_order": canceled_order or 0,
     }
     return render(request, "main/home.html", context)
-
 
 def get_order_details(request, order_id):
     try:
@@ -138,16 +129,28 @@ def get_order_details(request, order_id):
 
         items_data = []
         for item in order_items:
-            items_data.append(
-                {
-                    "product": {
-                        "name": item.product.name,
-                        "selling_price": str(item.product.selling_price),
-                    },
-                    "quantity": item.quantity,
-                    "get_total_product_price": str(item.get_total_product_price()),
-                }
-            )
+            if item.product:
+                items_data.append(
+                    {
+                        "product": {
+                            "name": item.product.name,
+                            "selling_price": str(item.product.selling_price),
+                        },
+                        "quantity": item.quantity,
+                        "get_total_product_price": str(item.get_total_product_price()),
+                    }
+                )
+            else:
+                items_data.append(
+                    {
+                        "product": {
+                            "name": "Product no longer available",
+                            "selling_price": "0.00",
+                        },
+                        "quantity": item.quantity,
+                        "get_total_product_price": "0.00",
+                    }
+                )
 
         return JsonResponse(
             {"success": True, "order": order_data, "order_items": items_data}
@@ -156,7 +159,7 @@ def get_order_details(request, order_id):
     except Order.DoesNotExist:
         return JsonResponse({"success": False, "error": "Order not found"}, status=404)
 
-
+@csrf_exempt
 def add_to_order(request, product_id):
     try:
         product = Product.objects.get(id=product_id)
@@ -166,20 +169,25 @@ def add_to_order(request, product_id):
         )
 
         order_item, created = OrderItem.objects.get_or_create(
-            order=order, product=product, defaults={"quantity": 1}
+            order=order, product=product, defaults={"quantity": 0}
         )
 
         if not created:
             order_item.quantity += 1
             order_item.save()
+        else:
+            order_item.quantity = 1
+            order_item.save()
 
         return JsonResponse(
             {"success": True, "order_items": get_order_items_data(order)}
         )
+    except Product.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Product not found"}, status=404)
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
-
+@csrf_exempt
 def update_order_item(request, item_id):
     try:
         data = json.loads(request.body)
@@ -196,39 +204,42 @@ def update_order_item(request, item_id):
         return JsonResponse(
             {"success": True, "order_items": get_order_items_data(order_item.order)}
         )
+    except OrderItem.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Order item not found"}, status=404)
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
-
+@csrf_exempt
 def complete_order(request):
     try:
         data = json.loads(request.body)
         phone_number = data.get('phone_number', '')
-        customer = Customer.objects.create(
-            phone_number=phone_number
-        )
+        
+        if not phone_number or len(phone_number) < 10:
+            return JsonResponse({"success": False, "error": "Valid phone number is required"}, status=400)
+
+        customer, created = Customer.objects.get_or_create(phone_number=phone_number)
 
         order = Order.objects.filter(status="pending").first()
          
-
         if not order or not order.items.exists():
-            raise Exception("No active order to complete")
+            return JsonResponse({"success": False, "error": "No active order to complete"}, status=400)
 
         order.status = "success"
         order.total_price = order.get_total_price()
+        order.customer = customer
         order.save()
+        
         Report.objects.create(
             user=request.user,
             order=order,
             context=f"order with the ID: {order.order_id} Completed Successfully",
             dec=f"order with the ID: {order.order_id} Completed Successfully",
         )
-        order.customer=customer
-        order.save()
+
         return JsonResponse({"success": True})
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=400)
-
 
 def get_active_order(request):
     try:
@@ -240,7 +251,6 @@ def get_active_order(request):
         return JsonResponse({"success": True, "order_items": []})
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=400)
-
 
 def get_recent_orders(request):
     try:
@@ -261,26 +271,21 @@ def get_recent_orders(request):
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
-
 def get_order_items_data(order):
     return [
         {
             "id": item.id,
-            "product_id": item.product.id,
-            "product_name": item.product.name,
-            "product_price": float(item.product.selling_price),
+            "product_id": item.product.id if item.product else None,
+            "product_name": item.product.name if item.product else "Product not available",
+            "product_price": float(item.product.selling_price) if item.product else 0.0,
             "quantity": item.quantity,
         }
         for item in order.items.all()
     ]
 
-
 @login_required
 def products(request):
-    try:
-        has_activated_account(request)
-    except:
-        pass
+    
     product_form = ProductForm()
     category_form = CategoryForm()
     products = Product.objects.select_related("category").all()
@@ -306,7 +311,6 @@ def products(request):
                     "id": product.id,
                     "name": product.name,
                     "category": product.category.name if product.category else "",
-                    "stock_quantity": product.stock_quantity,
                     "status": product.status,
                     "status_display": product.get_status_display(),
                     "selling_price": str(product.selling_price),
@@ -331,7 +335,6 @@ def product_detail(request, product_id):
             "id": product.id,
             "name": product.name,
             "category": product.category.name if product.category else "",
-            "stock_quantity": product.stock_quantity,
             "status": product.status,
             "status_display": product.get_status_display(),
             "selling_price": str(product.selling_price),
@@ -342,39 +345,30 @@ def product_detail(request, product_id):
     except Product.DoesNotExist:
         return JsonResponse({"error": "Product not found"}, status=404)
 
-
+@login_required
 def reports(request):
-    try:
-        has_activated_account(request)
-    except:
-        pass
+   
     reports = Report.objects.all()
     context = {"reports": reports}
     return render(request, "main/reports.html", context)
-
 
 def delete_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     Report.objects.create(
         user=request.user,
-        context=f"Product: {product.name} Completed Successfully",
-        dec=f"Product: {product.name} Completed Successfully",
+        context=f"Product: {product.name} Deleted Successfully",
+        dec=f"Product: {product.name} Deleted Successfully",
     )
     product.delete()
     messages.success(request, "Product deleted successfully")
     return redirect("products")
 
-
+@login_required
 def orders(request):
-    try:
-        has_activated_account(request)
-    except:
-        pass
+    
     return render(request, "main/orders.html")
 
-
 def filter_orders(request):
-
     time_filter = request.GET.get("time_filter", "today")
     status_filter = request.GET.get("status_filter", "all")
     custom_date = request.GET.get("custom_date", None)
@@ -439,22 +433,16 @@ def filter_orders(request):
         }
     )
 
-
 @login_required
 def cancel_order(request, order_id):
-    try:
-        has_activated_account(request)
-    except:
-        pass
+   
     order = get_object_or_404(Order, id=order_id)
 
     if request.method == "POST":
-
         reason_id = request.POST.get("reason")
         notes = request.POST.get("notes", "")
 
         try:
-
             reason = CancelOrder.objects.get(id=reason_id)
 
             order.status = "canceled"
@@ -493,7 +481,6 @@ def cancel_order(request, order_id):
         {"cancel_form": cancel_form, "orders": Order.objects.all()},
     )
 
-
 def delete_order(request, order_id):
     try:
         order = Order.objects.get(id=order_id)
@@ -502,21 +489,16 @@ def delete_order(request, order_id):
     except Order.DoesNotExist:
         return JsonResponse({"success": False, "error": "Order not found"}, status=404)
 
-
-def reports(request):
-    try:
-        has_activated_account(request)
-    except:
-        pass
+@login_required
+def reports_view(request):
+    
     return render(
         request,
         "main/reports.html",
         {"reports": Report.objects.select_related("order").all()},
     )
 
-
 def filter_reports(request):
-
     time_filter = request.GET.get("time_filter", "all")
     type_filter = request.GET.get("type_filter", "all")
     custom_date = request.GET.get("custom_date", None)
@@ -587,7 +569,6 @@ def filter_reports(request):
 
     return JsonResponse({"reports": reports_data})
 
-
 def report_detail(request, report_id):
     try:
         report = Report.objects.select_related("order").get(id=report_id)
@@ -603,7 +584,6 @@ def report_detail(request, report_id):
     except Report.DoesNotExist:
         return JsonResponse({"error": "Report not found"}, status=404)
 
-
 def delete_report(request, report_id):
     try:
         report = Report.objects.get(id=report_id)
@@ -612,23 +592,17 @@ def delete_report(request, report_id):
     except Report.DoesNotExist:
         return JsonResponse({"success": False, "error": "Report not found"}, status=404)
 
-
 @login_required
 def product_inventory(request):
-    try:
-        has_activated_account(request)
-    except:
-        pass
+    
     products = Product.objects.all().order_by("-created_at")
     categories = Category.objects.all()
 
     if request.method == "POST":
-
         product_form = ProductForm(request.POST, request.FILES)
         if product_form.is_valid():
             product_id = request.POST.get("product_id")
             if product_id:
-
                 product = get_object_or_404(Product, id=product_id)
                 product_form = ProductForm(
                     request.POST, request.FILES, instance=product
@@ -636,13 +610,17 @@ def product_inventory(request):
                 product_form.save()
                 Report.objects.create(
                     user=request.user,
-                    context=f"Product: {product.name} Created Successfully",
-                    dec=f"Product: {product.name} Created Successfully",
+                    context=f"Product: {product.name} Updated Successfully",
+                    dec=f"Product: {product.name} Updated Successfully",
                 )
                 messages.success(request, "Product updated successfully!")
             else:
-
                 product_form.save()
+                Report.objects.create(
+                    user=request.user,
+                    context=f"Product: {product_form.instance.name} Created Successfully",
+                    dec=f"Product: {product_form.instance.name} Created Successfully",
+                )
                 messages.success(request, "Product created successfully!")
             return redirect("product_inventory")
     else:
@@ -663,8 +641,7 @@ def product_inventory(request):
     }
     return render(request, "main/products.html", context)
 
-
-def product_detail(request, product_id):
+def product_detail_view(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     data = {
         "name": product.name,
@@ -672,15 +649,12 @@ def product_detail(request, product_id):
         "category": product.category.name if product.category else None,
         "status": product.status,
         "status_display": product.get_status_display(),
-        "stock_quantity": product.stock_quantity,
-        "actual_price": str(product.actual_price),
         "selling_price": str(product.selling_price),
         "image": product.image.url if product.image else None,
     }
     return JsonResponse(data)
 
-
-def delete_product(request, product_id):
+def delete_product_api(request, product_id):
     if request.method == "POST":
         product = get_object_or_404(Product, id=product_id)
         Report.objects.create(
@@ -692,36 +666,27 @@ def delete_product(request, product_id):
         return JsonResponse({"success": True})
     return JsonResponse({"success": False}, status=400)
 
-
 @login_required
 def workers(request):
-    try:
-        has_activated_account(request)
-    except:
-        pass
+    
     workers = Worker.objects.all()
     form = CreateWorkerForm()
     return render(request, "main/workers.html", {"workers": workers, "form": form})
-
 
 def delete_worker(request, worker_id):
     worker = get_object_or_404(Worker, id=worker_id)
     Report.objects.create(
         user=request.user,
-        context=f"Product: {worker.name} Deleted Successfully",
-        dec=f"Product: {worker.name} Deleted Successfully",
+        context=f"Worker: {worker.name} Deleted Successfully",
+        dec=f"Worker: {worker.name} Deleted Successfully",
     )
     worker.user.delete()
     worker.delete()
-    messages.success(request, "worker deleted successfully ")
+    messages.success(request, "Worker deleted successfully ")
     return redirect("workers")
 
-
 def create_worker(request):
-    try:
-        has_activated_account(request)
-    except:
-        pass
+    
     if request.method == "POST":
         form = CreateWorkerForm(request.POST, request.FILES)
         if form.is_valid():
@@ -732,7 +697,7 @@ def create_worker(request):
             if User.objects.filter(username=username).exists():
                 messages.error(request, f"Username '{username}' already exists.")
                 return redirect("workers")
-
+            
             if User.objects.filter(email=email).exists():
                 messages.error(request, f"Email '{email}' is already in use.")
                 return redirect("workers")
@@ -746,7 +711,7 @@ def create_worker(request):
             Report.objects.create(
                 user=request.user,
                 context=f"Worker: {worker.name} Created Successfully",
-                dec=f"Product: {worker.name} Created Successfully",
+                dec=f"Worker: {worker.name} Created Successfully",
             )
 
             messages.success(
@@ -763,9 +728,21 @@ def create_worker(request):
 
     return redirect("workers")
 
-
 class GetActivationCode(APIView):
     def get(self, request):
         activation_code = ActivateAccount.objects.all()
         code = ActivateAccountSerializer(activation_code, many=True).data
         return Response({"data": code})
+    
+
+
+def order_invoice(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    order_items = order.items.all()  # requires related_name="items" on OrderItem
+    print(order_items)  # debug, better use logging instead of print()
+
+    context = {
+        "order": order,
+        "order_items": order_items,
+    }
+    return render(request, "main/invoice.html", context)

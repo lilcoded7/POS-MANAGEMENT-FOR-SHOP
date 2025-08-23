@@ -1411,11 +1411,11 @@
                     <span>Dashboard</span>
                 </a>
             </li>
-           
+           {% if request.user.is_admin %}
             <li>
                 <a href="{% url 'products' %}">
                     <i class="fas fa-boxes"></i>
-                    <span>Products</span>
+                    <span>Meals</span>
                 </a>
             </li>
 
@@ -1432,7 +1432,7 @@
                     <span>Reports</span>
                 </a>
             </li>
-            {% if request.user.is_admin %}
+            
             <li>
                 <a href="{% url 'workers' %}">
                     <i class="fas fa-chart-bar"></i>

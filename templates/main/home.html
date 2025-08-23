@@ -208,518 +208,530 @@
         </div>
     </div>
     
-    <script>
-        const menuToggle = document.querySelector('.menu-toggle');
-        const sidebar = document.querySelector('.sidebar');
-        const sidebarOverlay = document.querySelector('.sidebar-overlay');
-        
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('active');
-            sidebarOverlay.classList.toggle('active');
-        });
-        
-        sidebarOverlay.addEventListener('click', () => {
-            sidebar.classList.remove('active');
-            sidebarOverlay.classList.remove('active');
-        });
+   <script>
+    const menuToggle = document.querySelector('.menu-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+    
+    menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+    });
+    
+    sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+    });
 
-        document.querySelectorAll('.category-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                
-                const category = this.textContent === 'All Products' ? '' : this.textContent;
-                filterProductsByCategory(category);
-            });
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            const category = this.textContent === 'All Products' ? '' : this.textContent;
+            filterProductsByCategory(category);
         });
+    });
 
-        function filterProductsByCategory(category) {
-            document.querySelectorAll('.product-card').forEach(card => {
-                const cardCategory = card.getAttribute('data-category');
-                if (category === '' || cardCategory === category) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
-
-        document.querySelector('.search-box input').addEventListener('input', function() {
-            const term = this.value.toLowerCase();
-            document.querySelectorAll('.product-card').forEach(card => {
-                const name = card.querySelector('h4').textContent.toLowerCase();
-                card.style.display = name.includes(term) ? 'block' : 'none';
-            });
-        });
-
+    function filterProductsByCategory(category) {
         document.querySelectorAll('.product-card').forEach(card => {
-            card.addEventListener('click', function() {
-                const productId = this.getAttribute('data-id');
-                addToOrder(productId);
-                
-                this.style.transform = 'scale(0.95)';
-                setTimeout(() => this.style.transform = 'scale(1)', 200);
-            });
-        });
-
-        async function addToOrder(productId) {
-            try {
-                const response = await fetch(`/add-to-order/${productId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({quantity: 1})
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    if (data.error) {
-                        throw new Error(data.error);
-                    } else {
-                        throw new Error('Failed to add to order');
-                    }
-                }
-                
-                updateOrderSummary(data.order_items);
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('danger', error.message || 'Failed to add product to order');
-            }
-        }
-
-        async function updateQuantity(itemId, change) {
-            try {
-                const response = await fetch(`/update-order-item/${itemId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({change: change})
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    if (data.error) {
-                        throw new Error(data.error);
-                    } else {
-                        throw new Error('Failed to update quantity');
-                    }
-                }
-                
-                updateOrderSummary(data.order_items);
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('danger', error.message || 'Failed to update quantity');
-            }
-        }
-
-        async function completeOrder() {
-            const checkoutBtn = document.querySelector('.checkout-btn');
-            const btnText = checkoutBtn.querySelector('.btn-text');
-            const btnLoading = checkoutBtn.querySelector('.btn-loading');
-            const customerPhone = document.getElementById('customerPhone').value.trim();
-            
-            if (!customerPhone) {
-                showAlert('danger', 'Please enter customer phone number');
-                return;
-            }
-            
-            btnText.style.display = 'none';
-            btnLoading.style.display = 'inline-block';
-            checkoutBtn.disabled = true;
-            
-            try {
-                const response = await fetch('/complete-order/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({
-                        phone_number: customerPhone
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    if (data.error) {
-                        throw new Error(data.error);
-                    } else {
-                        throw new Error('Failed to complete order');
-                    }
-                }
-                
-                if (data.success) {
-                    showLoadingOverlay('Order completed successfully!');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
-                } else {
-                    throw new Error(data.error || 'Failed to complete order');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('danger', error.message);
-            } finally {
-                btnText.style.display = 'inline-block';
-                btnLoading.style.display = 'none';
-                checkoutBtn.disabled = false;
-            }
-        }
-
-        function updateOrderSummary(orderItems) {
-            const orderItemsContainer = document.querySelector('.order-items');
-            const orderTotalContainer = document.querySelector('.order-total');
-            const checkoutBtn = document.querySelector('.checkout-btn');
-            
-            orderItemsContainer.innerHTML = '';
-            
-            if (orderItems.length === 0) {
-                orderItemsContainer.innerHTML = '<p style="text-align: center; color: #666;">No items in order</p>';
-                checkoutBtn.disabled = true;
+            const cardCategory = card.getAttribute('data-category');
+            if (category === '' || cardCategory === category) {
+                card.style.display = 'block';
             } else {
-                orderItems.forEach(item => {
-                    const itemElement = document.createElement('div');
-                    itemElement.className = 'order-item';
-                    itemElement.innerHTML = `
-                        <div class="item-info">
-                            <h4>${item.product_name}</h4>
-                            <div class="price">₵‎${item.product_price.toFixed(2)}</div>
-                        </div>
-                        <div class="item-qty">
-                            <button onclick="updateQuantity(${item.id}, -1)">-</button>
-                            <span>${item.quantity}</span>
-                            <button onclick="updateQuantity(${item.id}, 1)">+</button>
-                        </div>
-                    `;
-                    orderItemsContainer.appendChild(itemElement);
-                });
-                 
-                checkoutBtn.disabled = false;
+                card.style.display = 'none';
             }
-            
-            const subtotal = orderItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
-            const tax = subtotal * 0.1;
-            const total = subtotal + tax;
-            
-            orderTotalContainer.innerHTML = `
-                <div>
-                    <span>Subtotal</span>
-                    <span>₵‎${subtotal.toFixed(2)}</span>
-                </div>
-                <div>
-                    <span>Tax (10%)</span>
-                    <span>₵‎${tax.toFixed(2)}</span>
-                </div>
-                <div class="grand-total">
-                    <span>Total</span>
-                    <span>₵‎${total.toFixed(2)}</span>
-                </div>
-            `;
-        }
+        });
+    }
 
-        async function loadActiveOrder() {
-            try {
-                const response = await fetch('/get-active-order/');
-                if (!response.ok) throw new Error('Failed to load active order');
-                
-                const data = await response.json();
-                if (data.order_items) {
-                    updateOrderSummary(data.order_items);
-                }
-            } catch (error) {
-                console.error('Error loading active order:', error);
-            }
-        }
+    document.querySelector('.search-box input').addEventListener('input', function() {
+        const term = this.value.toLowerCase();
+        document.querySelectorAll('.product-card').forEach(card => {
+            const name = card.querySelector('h4').textContent.toLowerCase();
+            card.style.display = name.includes(term) ? 'block' : 'none';
+        });
+    });
 
-        async function loadRecentOrders() {
-            try {
-                const response = await fetch('/get-recent-orders/');
-                if (!response.ok) throw new Error('Failed to load recent orders');
-                
-                const data = await response.json();
-            } catch (error) {
-                console.error('Error loading recent orders:', error);
-            }
-        }
-
-        function showCancelForm(orderId) {
-            const modal = document.getElementById('cancelModal');
-            document.getElementById('cancelOrderId').value = orderId;
-            modal.style.display = 'flex';
-        }
-
-        async function handleCancelSubmit(e) {
-            e.preventDefault();
-            const form = e.target;
-            const formData = new FormData(form);
-            const orderId = document.getElementById('cancelOrderId').value;
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.innerHTML;
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const productId = this.getAttribute('data-id');
+            addToOrder(productId);
             
-            try {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                
-                const response = await fetch(`/cancel-order/${orderId}/`, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showAlert('success', data.message || 'Order canceled successfully');
-                    closeModal('cancelModal');
-                    setTimeout(() => window.location.reload(), 1000);
-                } else {
-                    showAlert('danger', data.message || 'Failed to cancel order');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('danger', 'An error occurred while canceling the order');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-            }
-        }
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => this.style.transform = 'scale(1)', 200);
+        });
+    });
 
-        async function viewOrderDetails(orderId) {
-            const orderDetailsContent = document.getElementById('orderDetailsContent');
-            orderDetailsContent.innerHTML = `
-                <div class="loading-spinner">
-                    <i class="fas fa-spinner fa-spin"></i> Loading receipt...
-                </div>
-            `;
-            
-            document.getElementById('viewModal').style.display = 'flex';
-            
-            try {
-                const response = await fetch(`/get-order-details/${orderId}/`);
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to load order details');
-                }
-                
-                const orderDate = new Date(data.order.created_at);
-                const formattedDate = orderDate.toLocaleString();
-                
-                let itemsTable = '';
-                if (data.order_items && data.order_items.length > 0) {
-                    itemsTable = `
-                        <table class="receipt-items-table">
-                            <thead>
-                                <tr>
-                                    <th class="item-col">Item</th>
-                                    <th class="price-col">Price</th>
-                                    <th class="qty-col">Qty</th>
-                                    <th class="total-col">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${data.order_items.map(item => `
-                                    <tr>
-                                        <td class="item-col">${truncateText(item.product.name, 20)}</td>
-                                        <td class="price-col">₵‎${item.product.selling_price}</td>
-                                        <td class="qty-col">${item.quantity}</td>
-                                        <td class="total-col">₵‎${item.get_total_product_price}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
-                }
-                
-                orderDetailsContent.innerHTML = `
-                    <div class="receipt-header">
-                        <div class="receipt-logo">
-                            <i class="fas fa-store"></i>
-                        </div>
-                        <div class="receipt-shop-name">Elite Shop</div>
-                        <div class="receipt-contact-info">
-                            <div class="social-row">
-                                <i class="fab fa-instagram"></i> @eliteshop
-                            </div>
-                            <div class="social-row">
-                                <i class="fas fa-phone"></i> +233 123 456 789
-                            </div>
-                            <div class="social-row">
-                                <i class="fab fa-facebook"></i> /eliteshop
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="receipt-details">
-                        <div class="receipt-detail-item">
-                            <span class="receipt-label">Order ID:</span>
-                            <span class="receipt-value">${data.order.order_id}</span>
-                        </div>
-                        
-                        <div class="receipt-detail-item">
-                            <span class="receipt-label">Date:</span>
-                            <span class="receipt-value">${formattedDate}</span>
-                        </div>
-                        
-                        <div class="receipt-detail-item">
-                            <span class="receipt-label">Customer Phone:</span>
-                            <span class="receipt-value phone">${data.order.phone_number || 'Not provided'}</span>
-                        </div>
-                        
-                        <div class="receipt-detail-item">
-                            <span class="receipt-label">Status:</span>
-                            <span class="receipt-status">${data.order.status}</span>
-                        </div>
-                    </div>
-                    
-                    ${itemsTable}
-                    
-                    <div class="receipt-total-section">
-                        <div class="receipt-total-row">
-                            <span>Subtotal:</span>
-                            <span>₵‎${data.order.total_price}</span>
-                        </div>
-                        <div class="receipt-total-row">
-                            <span>Tax (10%):</span>
-                            <span>₵‎${(data.order.total_price * 0.1).toFixed(2)}</span>
-                        </div>
-                        <div class="receipt-total-row receipt-grand-total">
-                            <span>Total:</span>
-                            <span>₵‎${(data.order.total_price * 1.1).toFixed(2)}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="thank-you-message">
-                        <p>Thank you for your purchase!</p>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Error loading receipt:', error);
-                orderDetailsContent.innerHTML = `
-                    <div class="alert alert-danger">
-                        Error loading receipt: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        function truncateText(text, maxLength) {
-            if (text.length <= maxLength) return text;
-            return text.substring(0, maxLength - 3) + '...';
-        }
-
-        async function deleteOrder() {
-            const orderId = document.getElementById('deleteOrderId').value;
-            try {
-                const response = await fetch(`/delete-order/${orderId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showAlert('success', 'Order deleted successfully');
-                    closeModal('deleteModal');
-                    setTimeout(() => window.location.reload(), 1000);
-                } else {
-                    showAlert('danger', data.message || 'Failed to delete order');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('danger', 'An error occurred while deleting the order');
-            }
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        function printOrder() {
-            const printContent = document.getElementById('orderDetailsContent').innerHTML;
-            const originalContent = document.body.innerHTML;
-            
-            document.body.innerHTML = `
-                <div class="receipt-print">
-                    ${printContent}
-                </div>
-            `;
-            
-            window.print();
-            document.body.innerHTML = originalContent;
-            document.getElementById('viewModal').style.display = 'flex';
-        }
-
-        function showAlert(type, message) {
-            const existingAlert = document.querySelector('.alert');
-            if (existingAlert) {
-                existingAlert.remove();
-            }
-            
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.innerHTML = `
-                ${message}
-                <button class="close">&times;</button>
-            `;
-            
-            document.body.appendChild(alert);
-            
-            alert.querySelector('.close').addEventListener('click', () => {
-                alert.remove();
+    async function addToOrder(productId) {
+        try {
+            const response = await fetch(`/add-to-order/${productId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({quantity: 1})
             });
             
-            setTimeout(() => {
-                alert.style.animation = 'fadeOut 0.3s ease forwards';
-                setTimeout(() => alert.remove(), 300);
-            }, 5000);
-        }
-
-        function showLoadingOverlay(message = '') {
-            const overlay = document.getElementById('loadingOverlay');
-            const content = overlay.querySelector('.loading-content p');
+            const data = await response.json();
             
-            if (message) {
-                content.textContent = message;
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to add to order');
             }
             
-            overlay.style.display = 'flex';
+            updateOrderSummary(data.order_items);
+        } catch (error) {
+            showAlert('danger', error.message || 'Failed to add product to order');
         }
+    }
 
-        function hideLoadingOverlay() {
-            document.getElementById('loadingOverlay').style.display = 'none';
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            loadActiveOrder();
-            loadRecentOrders();
+    async function updateQuantity(itemId, change) {
+        const itemElement = document.querySelector(`.order-item[data-item-id="${itemId}"]`);
+        const buttons = itemElement.querySelectorAll('button');
+        
+        buttons.forEach(btn => btn.disabled = true);
+        
+        try {
+            const response = await fetch(`/update-order-item/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({change: change})
+            });
             
-            const cancelForm = document.getElementById('cancelOrderForm');
-            if (cancelForm) {
-                cancelForm.addEventListener('submit', handleCancelSubmit);
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to update quantity');
             }
             
-            function handleResize() {
-                const isMobile = window.innerWidth < 768;
-                sidebar.classList.toggle('active', !isMobile);
+            if (data.order_items && data.order_items.length > 0) {
+                const updatedItem = data.order_items.find(item => item.id === itemId);
+                if (updatedItem) {
+                    const quantitySpan = itemElement.querySelector('.item-qty span');
+                    quantitySpan.textContent = updatedItem.quantity;
+                    updateOrderTotals(data.order_items);
+                } else {
+                    itemElement.remove();
+                    updateOrderTotals(data.order_items);
+                }
+            } else {
+                updateOrderSummary(data.order_items);
+            }
+        } catch (error) {
+            showAlert('danger', error.message || 'Failed to update quantity');
+        } finally {
+            buttons.forEach(btn => btn.disabled = false);
+        }
+    }
+
+    async function completeOrder() {
+        const checkoutBtn = document.querySelector('.checkout-btn');
+        const btnText = checkoutBtn.querySelector('.btn-text');
+        const btnLoading = checkoutBtn.querySelector('.btn-loading');
+        const customerPhone = document.getElementById('customerPhone').value.trim();
+        
+        if (!customerPhone) {
+            showAlert('danger', 'Please enter customer phone number');
+            return;
+        }
+        
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'inline-block';
+        checkoutBtn.disabled = true;
+        
+        try {
+            const response = await fetch('/complete-order/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    phone_number: customerPhone
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to complete order');
             }
             
-            window.addEventListener('resize', handleResize);
-            handleResize();
+            if (data.success) {
+                showLoadingOverlay('Order completed successfully!');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                throw new Error(data.error || 'Failed to complete order');
+            }
+        } catch (error) {
+            showAlert('danger', error.message);
+        } finally {
+            btnText.style.display = 'inline-block';
+            btnLoading.style.display = 'none';
+            checkoutBtn.disabled = false;
+        }
+    }
+
+    function updateOrderSummary(orderItems) {
+        const orderItemsContainer = document.querySelector('.order-items');
+        const checkoutBtn = document.querySelector('.checkout-btn');
+        
+        orderItemsContainer.innerHTML = '';
+        
+        if (orderItems.length === 0) {
+            orderItemsContainer.innerHTML = '<p style="text-align: center; color: #666;">No items in order</p>';
+            checkoutBtn.disabled = true;
+        } else {
+            orderItems.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'order-item';
+                itemElement.setAttribute('data-item-id', item.id);
+                itemElement.innerHTML = `
+                    <div class="item-info">
+                        <h4>${item.product_name}</h4>
+                        <div class="price">₵‎${item.product_price.toFixed(2)}</div>
+                    </div>
+                    <div class="item-qty">
+                        <button onclick="updateQuantity(${item.id}, -1)">-</button>
+                        <span>${item.quantity}</span>
+                        <button onclick="updateQuantity(${item.id}, 1)">+</button>
+                    </div>
+                `;
+                orderItemsContainer.appendChild(itemElement);
+            });
+             
+            checkoutBtn.disabled = false;
+        }
+        
+        updateOrderTotals(orderItems);
+    }
+
+    function updateOrderTotals(orderItems) {
+        const orderTotalContainer = document.querySelector('.order-total');
+        const checkoutBtn = document.querySelector('.checkout-btn');
+        
+        if (orderItems.length === 0) {
+            checkoutBtn.disabled = true;
+            orderTotalContainer.innerHTML = '';
+            return;
+        }
+        
+        const subtotal = orderItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
+        const tax = subtotal * 0.1;
+        const total = subtotal + tax;
+        
+        orderTotalContainer.innerHTML = `
+            <div>
+                <span>Subtotal</span>
+                <span>₵‎${subtotal.toFixed(2)}</span>
+            </div>
+            <div>
+                <span>Tax (10%)</span>
+                <span>₵‎${tax.toFixed(2)}</span>
+            </div>
+            <div class="grand-total">
+                <span>Total</span>
+                <span>₵‎${total.toFixed(2)}</span>
+            </div>
+        `;
+        
+        checkoutBtn.disabled = false;
+    }
+
+    async function loadActiveOrder() {
+        try {
+            const response = await fetch('/get-active-order/');
+            if (!response.ok) throw new Error('Failed to load active order');
+            
+            const data = await response.json();
+            if (data.order_items) {
+                updateOrderSummary(data.order_items);
+            }
+        } catch (error) {
+        }
+    }
+
+    async function loadRecentOrders() {
+        try {
+            const response = await fetch('/get-recent-orders/');
+            if (!response.ok) throw new Error('Failed to load recent orders');
+        } catch (error) {
+        }
+    }
+
+    function showCancelForm(orderId) {
+        const modal = document.getElementById('cancelModal');
+        document.getElementById('cancelOrderId').value = orderId;
+        modal.style.display = 'flex';
+    }
+
+    async function handleCancelSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const orderId = document.getElementById('cancelOrderId').value;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        
+        try {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            
+            const response = await fetch(`/cancel-order/${orderId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert('success', data.message || 'Order canceled successfully');
+                closeModal('cancelModal');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showAlert('danger', data.message || 'Failed to cancel order');
+            }
+        } catch (error) {
+            showAlert('danger', 'An error occurred while canceling the order');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    }
+
+    async function viewOrderDetails(orderId) {
+        const orderDetailsContent = document.getElementById('orderDetailsContent');
+        orderDetailsContent.innerHTML = `
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i> Loading receipt...
+            </div>
+        `;
+        
+        document.getElementById('viewModal').style.display = 'flex';
+        
+        try {
+            const response = await fetch(`/get-order-details/${orderId}/`);
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to load order details');
+            }
+            
+            const orderDate = new Date(data.order.created_at);
+            const formattedDate = orderDate.toLocaleString();
+            
+            let itemsTable = '';
+            if (data.order_items && data.order_items.length > 0) {
+                itemsTable = `
+                    <table class="receipt-items-table">
+                        <thead>
+                            <tr>
+                                <th class="item-col">Item</th>
+                                <th class="price-col">Price</th>
+                                <th class="qty-col">Qty</th>
+                                <th class="total-col">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.order_items.map(item => `
+                                <tr>
+                                    <td class="item-col">${truncateText(item.product.name, 20)}</td>
+                                    <td class="price-col">₵‎${item.product.selling_price}</td>
+                                    <td class="qty-col">${item.quantity}</td>
+                                    <td class="total-col">₵‎${item.get_total_product_price}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+            
+            orderDetailsContent.innerHTML = `
+                <div class="receipt-header">
+                    <div class="receipt-logo">
+                        <i class="fas fa-store"></i>
+                    </div>
+                    <div class="receipt-shop-name">Elite Shop</div>
+                    <div class="receipt-contact-info">
+                        <div class="social-row">
+                            <i class="fab fa-instagram"></i> @eliteshop
+                        </div>
+                        <div class="social-row">
+                            <i class="fas fa-phone"></i> +233 123 456 789
+                        </div>
+                        <div class="social-row">
+                            <i class="fab fa-facebook"></i> /eliteshop
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="receipt-details">
+                    <div class="receipt-detail-item">
+                        <span class="receipt-label">Order ID:</span>
+                        <span class="receipt-value">${data.order.order_id}</span>
+                    </div>
+                    
+                    <div class="receipt-detail-item">
+                        <span class="receipt-label">Date:</span>
+                        <span class="receipt-value">${formattedDate}</span>
+                    </div>
+                    
+                    <div class="receipt-detail-item">
+                        <span class="receipt-label">Customer Phone:</span>
+                        <span class="receipt-value phone">${data.order.phone_number || 'Not provided'}</span>
+                    </div>
+                    
+                    <div class="receipt-detail-item">
+                        <span class="receipt-label">Status:</span>
+                        <span class="receipt-status">${data.order.status}</span>
+                    </div>
+                </div>
+                
+                ${itemsTable}
+                
+                <div class="receipt-total-section">
+                    <div class="receipt-total-row">
+                        <span>Subtotal:</span>
+                        <span>₵‎${data.order.total_price}</span>
+                    </div>
+                    <div class="receipt-total-row">
+                        <span>Tax (10%):</span>
+                        <span>₵‎${(data.order.total_price * 0.1).toFixed(2)}</span>
+                    </div>
+                    <div class="receipt-total-row receipt-grand-total">
+                        <span>Total:</span>
+                        <span>₵‎${(data.order.total_price * 1.1).toFixed(2)}</span>
+                    </div>
+                </div>
+                
+                <div class="thank-you-message">
+                    <p>Thank you for your purchase!</p>
+                </div>
+            `;
+        } catch (error) {
+            orderDetailsContent.innerHTML = `
+                <div class="alert alert-danger">
+                    Error loading receipt: ${error.message}
+                </div>
+            `;
+        }
+    }
+
+    function truncateText(text, maxLength) {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength - 3) + '...';
+    }
+
+    async function deleteOrder() {
+        const orderId = document.getElementById('deleteOrderId').value;
+        try {
+            const response = await fetch(`/delete-order/${orderId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert('success', 'Order deleted successfully');
+                closeModal('deleteModal');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showAlert('danger', data.message || 'Failed to delete order');
+            }
+        } catch (error) {
+            showAlert('danger', 'An error occurred while deleting the order');
+        }
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    function printOrder() {
+        const printContent = document.getElementById('orderDetailsContent').innerHTML;
+        const originalContent = document.body.innerHTML;
+        
+        document.body.innerHTML = `
+            <div class="receipt-print">
+                ${printContent}
+            </div>
+        `;
+        
+        window.print();
+        document.body.innerHTML = originalContent;
+        document.getElementById('viewModal').style.display = 'flex';
+    }
+
+    function showAlert(type, message) {
+        const existingAlert = document.querySelector('.alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.innerHTML = `
+            ${message}
+            <button class="close">&times;</button>
+        `;
+        
+        document.body.appendChild(alert);
+        
+        alert.querySelector('.close').addEventListener('click', () => {
+            alert.remove();
         });
-    </script>
+        
+        setTimeout(() => {
+            alert.style.animation = 'fadeOut 0.3s ease forwards';
+            setTimeout(() => alert.remove(), 300);
+        }, 5000);
+    }
+
+    function showLoadingOverlay(message = '') {
+        const overlay = document.getElementById('loadingOverlay');
+        const content = overlay.querySelector('.loading-content p');
+        
+        if (message) {
+            content.textContent = message;
+        }
+        
+        overlay.style.display = 'flex';
+    }
+
+    function hideLoadingOverlay() {
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadActiveOrder();
+        loadRecentOrders();
+        
+        const cancelForm = document.getElementById('cancelOrderForm');
+        if (cancelForm) {
+            cancelForm.addEventListener('submit', handleCancelSubmit);
+        }
+        
+        function handleResize() {
+            const isMobile = window.innerWidth < 768;
+            sidebar.classList.toggle('active', !isMobile);
+        }
+        
+        window.addEventListener('resize', handleResize);
+        handleResize();
+    });
+</script>
 
     <style>
         .analytics-cards {

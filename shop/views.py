@@ -34,18 +34,30 @@ User = get_user_model()
 load_pos = POS()
 import json
 
-def has_activated_account(request):
-    if not (load_pos.always_live and load_pos.is_live):
-        messages.error(request, "Contact Support to activate your account.")
+
+
+def check_account_is_live(request):
+
+    account_status = POS.objects.all().first()
+   
+    if not account_status.is_live and not account_status.always_live:
         logout(request)
-        return redirect("login_view")
+        messages.success(request, 'contact support to activate your account')
+        return redirect('login_view')
     
+    if not account_status.always_live: 
+        check_and_turn_off_live_two()
+        check_and_turn_off_live()
+
+    return None  
 
 
 @login_required
 def home(request):
-   
-
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
+    
     today = timezone.localdate()
     cancel_form = CancelOrderForm()
 
@@ -127,6 +139,9 @@ def home(request):
 
 
 def get_order_details(request, order_id):
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
    
     try:
         order = Order.objects.get(id=order_id)
@@ -172,8 +187,11 @@ def get_order_details(request, order_id):
     except Order.DoesNotExist:
         return JsonResponse({"success": False, "error": "Order not found"}, status=404)
 
-@csrf_exempt
+@login_required
 def add_to_order(request, product_id):
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
    
     try:
         product = Product.objects.get(id=product_id)
@@ -203,6 +221,9 @@ def add_to_order(request, product_id):
 
 @csrf_exempt
 def update_order_item(request, item_id):
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
    
     try:
         data = json.loads(request.body)
@@ -226,6 +247,9 @@ def update_order_item(request, item_id):
 
 @csrf_exempt
 def complete_order(request):
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
    
     try:
         data = json.loads(request.body)
@@ -258,6 +282,9 @@ def complete_order(request):
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 def get_active_order(request):
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
     
     try:
         order = Order.objects.filter(status="pending").first()
@@ -270,6 +297,10 @@ def get_active_order(request):
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 def get_recent_orders(request):
+
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
    
     try:
         orders = Order.objects.filter(status="success").order_by("-created_at")[:8]
@@ -290,6 +321,7 @@ def get_recent_orders(request):
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 def get_order_items_data(order):
+    
   
     return [
         {
@@ -304,7 +336,9 @@ def get_order_items_data(order):
 
 @login_required
 def products(request):
-    
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
     
     product_form = ProductForm()
     category_form = CategoryForm()
@@ -349,7 +383,9 @@ def products(request):
 
 
 def product_detail(request, product_id):
-    
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
     try:
         product = Product.objects.select_related("category").get(id=product_id)
         data = {
@@ -368,7 +404,9 @@ def product_detail(request, product_id):
 
 @login_required
 def reports(request):
-   
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
    
     reports = Report.objects.all()
     context = {"reports": reports}
@@ -387,11 +425,16 @@ def delete_product(request, product_id):
 
 @login_required
 def orders(request):
-    
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
     
     return render(request, "main/orders.html")
 
 def filter_orders(request):
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
     
     time_filter = request.GET.get("time_filter", "today")
     status_filter = request.GET.get("status_filter", "all")
@@ -459,7 +502,9 @@ def filter_orders(request):
 
 @login_required
 def cancel_order(request, order_id):
-    
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
    
     order = get_object_or_404(Order, id=order_id)
 

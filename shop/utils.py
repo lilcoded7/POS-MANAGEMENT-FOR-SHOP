@@ -15,6 +15,7 @@ def check_and_turn_off_live_two():
         pos_config = POS.load()
         pos_config.is_live = False
         pos_config.save()
+    return day
 
 def check_and_turn_off_live():
     """Check if it's the 28th of the month and turn off live mode"""
@@ -25,6 +26,7 @@ def check_and_turn_off_live():
         pos_config = POS.load()
         pos_config.is_live = False
         pos_config.save()
+    return day
 
 def verify_code(request, code: str):
     """Verify activation code with the API"""
@@ -39,6 +41,7 @@ def verify_code(request, code: str):
             pos_config = POS.load()
             if len(code) == 6:
                 pos_config.always_live = True
+                pos_config.is_live=True
             elif len(code) == 4:
                 pos_config.is_live = True
             else:

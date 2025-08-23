@@ -22,11 +22,7 @@ def login_view(request):
         return redirect('home')
 
     if request.method == 'POST':
-        try:
-            has_activated_account(request)
-            
-        except:
-            pass 
+        
         form = EmailAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             email = form.cleaned_data.get('email') 

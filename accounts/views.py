@@ -6,7 +6,6 @@ from django.views.decorators.cache import never_cache
 from accounts.forms import EmailAuthenticationForm, EmailForm, ResetPasswordForm
 from django.contrib.auth import get_user_model
 from accounts.utils import EmailSender
-from shop.views import has_activated_account
 import random
 
 User = get_user_model()
@@ -15,14 +14,11 @@ sender = EmailSender()
 
 @never_cache
 def login_view(request):
-   
-
     if request.user.is_authenticated:
         messages.info(request, "You're already logged in.")
         return redirect('home')
 
     if request.method == 'POST':
-        
         form = EmailAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             email = form.cleaned_data.get('email') 

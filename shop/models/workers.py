@@ -10,8 +10,8 @@ class Worker(BaseModel):
     name = models.CharField(max_length=100)
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=100)
-    id_card = models.CharField(max_length=100, null=True, blank=True)
-    id_image = models.ImageField(null=True, blank=True)
+    id_card = models.CharField(max_length=100)
+    id_image = models.ImageField()
 
     def __str__(self):
         return f"Name: {self.name} Phone: {self.phone_number}"

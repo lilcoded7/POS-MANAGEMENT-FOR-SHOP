@@ -28,7 +28,7 @@
                     <option value="wish_list">Wish List</option>
                 </select>
             </div>
-            <button id="applyFilter" style="color: green;" class="filter-btn">Apply Filters</button>
+            <button id="applyFilter" class="filter-btn">Apply Filters</button>
         </div>
     </div>
 
@@ -195,7 +195,7 @@ function formatDate(dateString) {
 }
 
 async function viewOrderDetails(orderId) {
-    window.location.href = `/order/invoice/${orderId}/`;
+    window.location.href = `/orders/${orderId}/`;
 }
 
 async function cancelOrder(orderId) {

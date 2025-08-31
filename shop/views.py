@@ -808,3 +808,10 @@ def activate_account(request):
 
 
 
+def view_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+
+    context = {
+        'order':order
+    }
+    return render(request, 'main/view_order_detail.html', context)

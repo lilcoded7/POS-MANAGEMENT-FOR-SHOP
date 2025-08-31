@@ -170,7 +170,7 @@ function generateOrderRowHTML(order) {
                 </a>
                 
                 ${isAdmin ? `
-                <a href="#" class="delete-btn" onclick="confirmDeleteOrder(${order.id || 0})">
+                <a href="##" class="delete-btn" onclick="confirmDeleteOrder(${order.id || 0})">
                     <i class="fas fa-trash"></i> Delete
                 </a>
                 ` : ''}
@@ -195,7 +195,7 @@ function formatDate(dateString) {
 }
 
 async function viewOrderDetails(orderId) {
-    window.location.href = `/orders/${orderId}/`;
+    window.location.href = `/order/details/${orderId}`;
 }
 
 async function cancelOrder(orderId) {

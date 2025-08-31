@@ -37,4 +37,5 @@ urlpatterns = [
         name="get_activating_code",
     ),
     path("activate/account/", activate_account, name="activate_account"),
+    path("order/details/<int:order_id>", view_order, name="view_order_details"),
 ]

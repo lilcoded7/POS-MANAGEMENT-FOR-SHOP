@@ -53,7 +53,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for order in orders|slice:':8' %}
+                {% for order in today_orders %}
                 <tr>
                     <td>#{{order.order_id}}</td>
                     <td>{{order.get_order_quantity}}</td>

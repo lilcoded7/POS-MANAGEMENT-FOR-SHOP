@@ -52,6 +52,7 @@ def home(request):
         is_canceled=False,
         created_at__range=(start_datetime, end_datetime),
     )
+    print(today_orders)
     canceled_order = Order.objects.filter(
         is_canceled=True, created_at__range=(start_datetime, end_datetime)
     ).count()
@@ -105,6 +106,7 @@ def home(request):
         'cancel_form':cancel_form,
         "categories": categories,
         "order_items": order_items,
+        'today_orders':today_orders,
         "orders": orders,
         "reasons": reasons,
         "form": form,
@@ -694,6 +696,7 @@ def delete_worker(request, worker_id):
     messages.success(request, 'worker deleted successfully ')
     return redirect('workers')
 
+
 def create_worker(request):
     try:
         has_activated_account(request)
@@ -717,12 +720,21 @@ def create_worker(request):
             user = User.objects.create(
                 username=username,
                 email=email,
-                password='0000'
             )
+            user.set_password('0000')
+            user.save()
 
             worker = form.save(commit=False)
             worker.user = user
             worker.save()
+
+            if worker.role=='Sales' or 'Sales Personnel':
+                worker.user.is_staff=True
+                worker.user.save()
+            
+            if worker.role=='Admin':
+                worker.user.is_admin=True
+                worker.user.save()
 
             Report.objects.create(
             user=request.user, 

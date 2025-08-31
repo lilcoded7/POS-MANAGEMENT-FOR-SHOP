@@ -77,6 +77,13 @@
                     <form id="workerForm" method="post" enctype="multipart/form-data" action="{% url 'create_worker' %}">
                         {% csrf_token %}
                         <div class="form-group">
+                            <label for="id_name">Role*</label>
+                            {{ form.role }}
+                            {% if form.role.errors %}
+                                <div class="error-message">{{ form.role.errors.as_text }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
                             <label for="id_name">Name*</label>
                             {{ form.name }}
                             {% if form.name.errors %}

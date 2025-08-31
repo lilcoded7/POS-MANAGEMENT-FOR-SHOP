@@ -4,32 +4,37 @@
 <div class="reports-container">
     <div class="reports-header">
         <h2>Reports Management</h2>
-        <div class="report-filters">
-            <div class="filter-group">
-                <label for="timeFilter">Time Period:</label>
-                <select id="timeFilter">
-                    <option value="all">All Time</option>
-                    <option value="today">Today</option>
-                    <option value="yesterday">Yesterday</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                    <option value="custom">Custom Date</option>
-                </select>
+        <div class="header-actions">
+            <div class="report-filters">
+                <div class="filter-group">
+                    <label for="timeFilter">Time Period:</label>
+                    <select id="timeFilter">
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="custom">Custom Date</option>
+                    </select>
+                </div>
+                <div class="filter-group" id="customDateFilter" style="display: none;">
+                    <label for="datePicker">Select Date:</label>
+                    <input type="date" id="datePicker">
+                </div>
+                <div class="filter-group">
+                    <label for="typeFilter">Report Type:</label>
+                    <select id="typeFilter">
+                        <option value="all">All Types</option>
+                        <option value="order_cancel">Order Cancellations</option>
+                        <option value="system">System Reports</option>
+                        <option value="other">Other Reports</option>
+                    </select>
+                </div>
+                <button id="applyFilter" class="filter-btn">Apply Filters</button>
             </div>
-            <div class="filter-group" id="customDateFilter" style="display: none;">
-                <label for="datePicker">Select Date:</label>
-                <input type="date" id="datePicker">
-            </div>
-            <div class="filter-group">
-                <label for="typeFilter">Report Type:</label>
-                <select id="typeFilter">
-                    <option value="all">All Types</option>
-                    <option value="order_cancel">Order Cancellations</option>
-                    <option value="system">System Reports</option>
-                    <option value="other">Other Reports</option>
-                </select>
-            </div>
-            <button id="applyFilter" class="filter-btn">Apply Filters</button>
+            <button id="exportPdf" class="export-btn">
+                <i class="fas fa-file-pdf"></i> Export as PDF
+            </button>
         </div>
     </div>
 
@@ -78,7 +83,6 @@
                 </tr>
                 {% endfor %}
             </tbody>
-
         </table>
     </div>
 
@@ -96,7 +100,12 @@
     </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 <script>
+// Initialize jsPDF
+window.jsPDF = window.jspdf.jsPDF;
+
 document.addEventListener('DOMContentLoaded', function() {
     // Setup event listeners
     document.getElementById('timeFilter').addEventListener('change', function() {
@@ -122,6 +131,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         loadReports(timeFilter, typeFilter, dateFilter);
     });
+    
+    // Add event listener for PDF export button
+    document.getElementById('exportPdf').addEventListener('click', exportToPdf);
 });
 
 function loadReports(timeFilter, typeFilter, customDate = '') {
@@ -246,6 +258,77 @@ function viewOrderDetails(orderId) {
     alert('Order details for ID: ' + orderId);
     // You can reuse the order details modal from your orders page
 }
+
+function exportToPdf() {
+    // Get current filter values
+    const timeFilter = document.getElementById('timeFilter').value;
+    const typeFilter = document.getElementById('typeFilter').value;
+    let dateFilter = '';
+    
+    if (timeFilter === 'custom') {
+        dateFilter = document.getElementById('datePicker').value;
+        if (!dateFilter) {
+            alert('Please select a date for custom filter');
+            return;
+        }
+    }
+    
+    // Create PDF document
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(18);
+    doc.text('Reports Export', 14, 22);
+    
+    // Add filter information
+    doc.setFontSize(12);
+    let filterText = `Time Period: ${document.getElementById('timeFilter').options[document.getElementById('timeFilter').selectedIndex].text}`;
+    if (timeFilter === 'custom') {
+        filterText += ` (${dateFilter})`;
+    }
+    filterText += ` | Report Type: ${document.getElementById('typeFilter').options[document.getElementById('typeFilter').selectedIndex].text}`;
+    doc.text(filterText, 14, 30);
+    
+    // Add export date
+    doc.text(`Exported on: ${new Date().toLocaleString()}`, 14, 38);
+    
+    // Prepare table data
+    const tableRows = [];
+    const table = document.getElementById('reportsTableBody');
+    const rows = table.getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const cols = rows[i].getElementsByTagName('td');
+        const rowData = [];
+        
+        for (let j = 0; j < cols.length; j++) {
+            // Skip the actions column (last column)
+            if (j === cols.length - 1) continue;
+            
+            // For order links, extract just the text
+            if (j === 5 && cols[j].querySelector('a')) {
+                rowData.push(cols[j].querySelector('a').textContent);
+            } else {
+                rowData.push(cols[j].textContent.trim());
+            }
+        }
+        
+        tableRows.push(rowData);
+    }
+    
+    // Add table to PDF
+    doc.autoTable({
+        head: [['Report ID', 'User', 'Date', 'Context', 'Description', 'Related Order']],
+        body: tableRows,
+        startY: 45,
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [66, 135, 245] }
+    });
+    
+    // Save the PDF
+    const fileName = `reports_export_${new Date().toISOString().slice(0, 10)}.pdf`;
+    doc.save(fileName);
+}
 </script>
 
 <style>
@@ -260,6 +343,13 @@ function viewOrderDetails(orderId) {
     margin-bottom: 20px;
     flex-wrap: wrap;
     gap: 15px;
+}
+
+.header-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
 }
 
 .report-filters {
@@ -287,13 +377,24 @@ function viewOrderDetails(orderId) {
     min-width: 150px;
 }
 
-.filter-btn {
+.filter-btn, .export-btn {
     padding: 8px 16px;
-    background: var(--secondary);
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-btn {
+    background: var(--secondary);
+}
+
+.export-btn {
+    background: #e74c3c;
+    align-self: flex-start;
 }
 
 .reports-table {
@@ -412,8 +513,9 @@ function viewOrderDetails(orderId) {
         width: 100%;
     }
     
-    .filter-btn {
+    .filter-btn, .export-btn {
         width: 100%;
+        justify-content: center;
     }
 }
 </style>

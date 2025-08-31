@@ -64,9 +64,10 @@ class ProductForm(forms.ModelForm):
 
 
 class CreateWorkerForm(forms.ModelForm):
+    
     class Meta:
         model = Worker
-        fields = ["name", "email", "phone_number", "id_card", "id_image"]
+        fields = ["role", "name", "email", "phone_number", "id_card", "id_image"]
 
 
 class CategoryForm(forms.ModelForm):

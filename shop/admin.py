@@ -5,7 +5,8 @@ from shop.models.products import Product, Category
 from shop.models.workers import Worker
 from shop.models.reports import Report
 from shop.models.cancel_order import CancelOrder
-from shop.models.activate_accounts import ActivateAccount
+from shop.models.activate_accounts import ActivateAccount, POS
+from django.core.exceptions import ValidationError
 # Register your models here.
 
 class OrderAdmin(admin.ModelAdmin):
@@ -27,3 +28,18 @@ admin.site.register(Category)
 admin.site.register(Worker)
 admin.site.register(Report)
 admin.site.register(CancelOrder)
+
+@admin.register(POS)
+class POSAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+       
+        return not POS.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+      
+        return False
+
+    def get_queryset(self, request):
+        
+        POS.objects.get_or_create(pk=1)
+        return super().get_queryset(request)

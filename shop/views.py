@@ -16,7 +16,11 @@ from datetime import datetime, time, timedelta
 from django.utils import timezone
 from shop.models.workers import Worker
 from django.contrib.auth import get_user_model, logout
+from shop.serializer import ActivateAccountSerializer
 from django.db.models import Q
+from rest_framework import generics 
+from rest_framework.permissions import AllowAny
+from shop.utils import *
 
 User = get_user_model()
 
@@ -25,18 +29,27 @@ import json
 # Create your views here.
 
 
-def has_activated_account(request):
-    if request.user.has_activated==False:
-        messages.error(request, 'Contact Support to activate your Account')
+def check_account_is_live(request):
+
+    account_status = POS.objects.all().first()
+   
+    if not account_status.is_live and not account_status.always_live:
         logout(request)
+        messages.success(request, 'contact support to activate your account')
         return redirect('login_view')
+    
+    if not account_status.always_live: 
+        check_and_turn_off_live_two()
+        check_and_turn_off_live()
+
+    return None  
 
 @login_required
 def home(request):
-    try:
-        has_activated_account(request)
-    except:
-        pass
+    redirect_response = check_account_is_live(request)
+    if redirect_response:
+        return redirect_response
+    
     today = timezone.localdate()
     cancel_form = CancelOrderForm()
 
@@ -756,7 +769,42 @@ def create_worker(request):
 
 
 
+from rest_framework.response import Response
+from rest_framework import status
+class ActivationAPIView(generics.GenericAPIView):
+    serializer_class = ActivateAccountSerializer
+    permission_classes = [AllowAny]
 
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            return Response({
+                'message': 'Activation code is valid',
+                'status': 'success'
+            }, status=status.HTTP_200_OK)
+        
+        return Response({
+            'message': 'Invalid activation code',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+
+def activate_account(request):
+    form = ActivationForm()
+
+    if request.method == 'POST':
+        form = ActivationForm(request.POST)
+        if form.is_valid():
+            code = form.cleaned_data['code'].replace('-', '')
+            result = verify_code(request, code)
+
+            if result.get("status") == "success":
+                messages.success(request, "Account activated successfully. you can now login your account")
+            else:
+                error = result.get("error", "Activation failed.")
+                messages.error(request, error)
+
+    return render(request, 'main/account.html', {'form': form})
 
 
 

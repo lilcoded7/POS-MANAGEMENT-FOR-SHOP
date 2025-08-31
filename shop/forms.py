@@ -74,3 +74,17 @@ class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
         fields = ["name"]
+
+
+class ActivationForm(forms.Form):
+    code = forms.CharField(
+        required=True, 
+        widget=forms.TextInput(
+            attrs={
+                'class':'form-control',
+                'id':'activation-code',
+                'placeholder':'Enter activation code'
+
+            }
+        )
+    )
